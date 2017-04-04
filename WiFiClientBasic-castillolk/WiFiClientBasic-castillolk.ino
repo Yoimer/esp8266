@@ -12,6 +12,8 @@ const char* host = "castillolk.com.ve";
 
 String line = "";
 String tmp = "";
+byte OldCounter = -1;
+byte NewCounter = -1;
 
 void setup() {
   Serial.begin(115200);
@@ -77,10 +79,17 @@ void loop() {
   tmp = line.substring(3, 5); //Gets oldnumber
   Serial.println("tmp: ");
   Serial.println(tmp);
+  OldCounter = tmp.toInt();
+  Serial.print("OldCounter: ");
+  Serial.println(OldCounter);
   
   tmp = line.substring(6, 8);  // Gets new number
   Serial.println("tmp: ");
   Serial.println(tmp);
+  NewCounter = tmp.toInt();
+  Serial.println("tmp: ");
+  Serial.print("NewCounter: ");
+  Serial.println(NewCounter);
 
 
   // Works OK
