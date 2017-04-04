@@ -10,6 +10,9 @@ const char* password = "remioy2006202";
 //const char* host = "pure-caverns-1350.herokuapp.com";
 const char* host = "castillolk.com.ve";
 
+String line = "";
+String tmp = "";
+
 void setup() {
   Serial.begin(115200);
   delay(10);
@@ -29,7 +32,7 @@ void setup() {
   }
 
   Serial.println("");
-  Serial.println("WiFi connected");  
+  Serial.println("WiFi connected");
   Serial.println("IP address: ");
   Serial.println(WiFi.localIP());
 }
@@ -60,17 +63,37 @@ void loop() {
 
   // This will send the request to the server
   client.print(String("GET ") + url + " HTTP/1.1\r\n" +
-               "Host: " + host + "\r\n" + 
+               "Host: " + host + "\r\n" +
                "Connection: close\r\n\r\n");
-  delay(40);
+  delay(90);
 
   // Read all the lines of the reply from server and print them to Serial
   Serial.println("Respond:");
-  while(client.available()){
-    String line = client.readStringUntil('\r');
+  while (client.available()) {
+    line = client.readStringUntil('\r');
     Serial.print(line);
   }
 
+  tmp = line.substring(3, 5); //Gets oldnumber
+  Serial.println("tmp: ");
+  Serial.println(tmp);
+  
+  tmp = line.substring(6, 8);  // Gets new number
+  Serial.println("tmp: ");
+  Serial.println(tmp);
+
+
+  // Works OK
+  //  Serial.println("firstPoundSign: ");
+  //  int firstPoundSign = line.indexOf(',');
+  //  Serial.println(firstPoundSign);
+  //
+  //  Serial.println("secondPoundSign: ");
+  //  int secondPoundSign = line.indexOf(',', firstPoundSign + 1);
+  //  Serial.println(secondPoundSign);
+
   Serial.println();
   Serial.println("closing connection");
+
 }
+
