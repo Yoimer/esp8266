@@ -1,70 +1,76 @@
-/*
- *  This sketch sends a message to a TCP server
- *
- */
-
 #include <ESP8266WiFi.h>
-#include <ESP8266WiFiMulti.h>
 
-ESP8266WiFiMulti WiFiMulti;
+//const char* ssid     = "WiwoNET";
+//const char* password = "xxxxxxx";
+
+const char* ssid     = "Casa";
+const char* password = "remioy2006202";
+
+//const char* host = "https://pure-caverns-1350.herokuapp.com";
+//const char* host = "pure-caverns-1350.herokuapp.com";
+const char* host = "castillolk.com.ve";
 
 void setup() {
-    Serial.begin(115200);
-    delay(10);
+  Serial.begin(115200);
+  delay(10);
 
-    // We start by connecting to a WiFi network
-    ////WiFiMulti.addAP("SSID", "passpasspass");
-    WiFiMulti.addAP("Casa", "remioy2006202");
+  // We start by connecting to a WiFi network
 
-    Serial.println();
-    Serial.println();
-    Serial.print("Wait for WiFi... ");
+  Serial.println();
+  Serial.println();
+  Serial.print("Connecting to ");
+  Serial.println(ssid);
 
-    while(WiFiMulti.run() != WL_CONNECTED) {
-        Serial.print(".");
-        delay(500);
-    }
+  WiFi.begin(ssid, password);
 
-    Serial.println("");
-    Serial.println("WiFi connected");
-    Serial.println("IP address: ");
-    Serial.println(WiFi.localIP());
-
+  while (WiFi.status() != WL_CONNECTED) {
     delay(500);
+    Serial.print(".");
+  }
+
+  Serial.println("");
+  Serial.println("WiFi connected");  
+  Serial.println("IP address: ");
+  Serial.println(WiFi.localIP());
 }
 
+int value = 0;
 
 void loop() {
-    const uint16_t port = 80;
-    ////const char * host = "192.168.1.1"; // ip or dns
-    const char * host = "190.9.35.184"; // ip or dns http://www.castillolk.com.ve
+  delay(5000);
+  ++value;
 
-    
-    
-    Serial.print("connecting to ");
-    Serial.println(host);
+  Serial.print("connecting to ");
+  Serial.println(host);
 
-    // Use WiFiClient class to create TCP connections
-    WiFiClient client;
+  // Use WiFiClient class to create TCP connections
+  WiFiClient client;
+  const int httpPort = 80;
+  if (!client.connect(host, httpPort)) {
+    Serial.println("connection failed");
+    return;
+  }
 
-    if (!client.connect(host, port)) {
-        Serial.println("connection failed");
-        Serial.println("wait 5 sec...");
-        delay(5000);
-        return;
-    }
+  // We now create a URI for the request
+  //String url = "/stan";
+  String url = "/WhiteList.txt";
 
-    // This will send the request to the server
-    client.print("Send this data to server");
+  Serial.print("Requesting URL: ");
+  Serial.println(url);
 
-    //read back one line from server
+  // This will send the request to the server
+  client.print(String("GET ") + url + " HTTP/1.1\r\n" +
+               "Host: " + host + "\r\n" + 
+               "Connection: close\r\n\r\n");
+  delay(40);
+
+  // Read all the lines of the reply from server and print them to Serial
+  Serial.println("Respond:");
+  while(client.available()){
     String line = client.readStringUntil('\r');
-    client.println(line);
+    Serial.print(line);
+  }
 
-    Serial.println("closing connection");
-    client.stop();
-    
-    Serial.println("wait 5 sec...");
-    delay(5000);
+  Serial.println();
+  Serial.println("closing connection");
 }
-
