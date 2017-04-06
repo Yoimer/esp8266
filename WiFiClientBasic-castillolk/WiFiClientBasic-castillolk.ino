@@ -8,12 +8,18 @@ const char* password = "remioy2006202";
 
 //const char* host = "https://pure-caverns-1350.herokuapp.com";
 //const char* host = "pure-caverns-1350.herokuapp.com";
+////const char* host="dev.teubi.co"; Salvadorian fellas
 const char* host = "castillolk.com.ve";
 
 String line = "";
 String tmp = "";
+String jj = "";
+
 byte OldCounter = -1;
 byte NewCounter = -1;
+byte j = -1;
+byte f = -1;
+byte r = -1;
 
 void setup() {
   Serial.begin(115200);
@@ -39,11 +45,9 @@ void setup() {
   Serial.println(WiFi.localIP());
 }
 
-int value = 0;
-
 void loop() {
   delay(5000);
-  ++value;
+
 
   Serial.print("connecting to ");
   Serial.println(host);
@@ -58,7 +62,9 @@ void loop() {
 
   // We now create a URI for the request
   //String url = "/stan";
+  //String url = "/hola.php";  Salvadorian fellas
   String url = "/WhiteList.txt";
+
 
   Serial.print("Requesting URL: ");
   Serial.println(url);
@@ -75,34 +81,61 @@ void loop() {
     line = client.readStringUntil('\r');
     Serial.print(line);
   }
-
-  tmp = line.substring(3, 5); //Gets oldnumber
-  Serial.println("tmp: ");
-  Serial.println(tmp);
-  OldCounter = tmp.toInt();
-  Serial.print("OldCounter: ");
-  Serial.println(OldCounter);
-  
-  tmp = line.substring(6, 8);  // Gets new number
-  Serial.println("tmp: ");
-  Serial.println(tmp);
-  NewCounter = tmp.toInt();
-  Serial.println("tmp: ");
-  Serial.print("NewCounter: ");
-  Serial.println(NewCounter);
-
-
-  // Works OK
-  //  Serial.println("firstPoundSign: ");
-  //  int firstPoundSign = line.indexOf(',');
-  //  Serial.println(firstPoundSign);
-  //
-  //  Serial.println("secondPoundSign: ");
-  //  int secondPoundSign = line.indexOf(',', firstPoundSign + 1);
-  //  Serial.println(secondPoundSign);
+  LoadWhiteList();
 
   Serial.println();
   Serial.println("closing connection");
 
 }
 
+
+//////////////////////////////////////
+void ClearWhiteList()
+{
+  Serial.println("On ClearWhiteList");
+  String jj = "";
+  j = 1 ;         // lleva la cuenta de los nros a borrar
+  while (j <= OldCounter)
+  {
+    jj = j;
+    tmp = "AT+CPBW=" + jj + "\r\n";
+    Serial.println(tmp);       // comando AT a ejecutar ??
+    j = j + 1;
+  }
+}
+/////////////////////////////////////////////////////
+void LoadWhiteList()
+{
+  Serial.println("On LoadWhiteList");
+  jj = "";
+  tmp = line.substring(3, 5); //Gets oldnumber
+  OldCounter = tmp.toInt();
+  Serial.print("OldCounter: ");
+  Serial.println(OldCounter);
+  
+  tmp = line.substring(6, 8);  // Gets new number
+  NewCounter = tmp.toInt();
+  Serial.print("NewCounter: ");
+  Serial.println(NewCounter);
+  
+  ClearWhiteList();
+  
+  f = 9;         // aqui comienzan los nros de telefono
+  j = 1;         // lleva la cuenta de los nros a cargar
+  while (j <= NewCounter)
+  {
+    r  = f + 11;             //  nros son de largo 11 ejm 04265860622
+    ////tmp  = BuildString.substring( f , r );
+    tmp  = line.substring(f, r);
+    jj   = j;
+    tmp  = "AT+CPBW=" + jj + ",\"" + tmp + "\",129,\"" + jj + "\"\r\n";
+    //  if(0 != gprs.sendCmdAndWaitForResp(tmp.c_str(), "OK", TIMEOUT))
+    //    {
+    //    ERROR("ERROR:CMGF");
+    //    return;
+    //   }
+    Serial.println(tmp);       // comando AT a ejecutar
+    f = f + 12;            //  12 para saltar la coma
+    j = j + 1;
+  }
+}
