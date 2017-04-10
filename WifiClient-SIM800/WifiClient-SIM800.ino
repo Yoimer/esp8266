@@ -10,7 +10,7 @@
 
 //ESP8266TX is connected to Arduino RX D0
 #define ESP8266TX 0
- 
+
 //ESP8266RX is connected to Arduino TX D1
 #define ESP8266RX 1
 
@@ -21,12 +21,16 @@ SoftwareSerial ESP8266(ESP8266TX, ESP8266RX);
 
 //SIM800 TX is connected to Arduino D8
 #define SIM800_TX_PIN 8
- 
+
 //SIM800 RX is connected to Arduino D7
 #define SIM800_RX_PIN 7
 
 //Create software serial object to communicate with SIM800
 SoftwareSerial serialSIM800(SIM800_TX_PIN, SIM800_RX_PIN);
+
+#define TIMEOUT 5000
+
+#define onModulePin 13
 
 char startChar = '#'; // or '!', or whatever your start character is
 char endChar = '#';
@@ -177,8 +181,8 @@ void LoadWhiteList()
   ClearWhiteList();
   j = 0;
   while (j < newNumber)
-  { 
-    String jj = String(j+1); // Converts int to String
+  {
+    String jj = String(j + 1); // Converts int to String
     tmp = "";
     tmp = "AT+CPBW=" + jj + ",\"" + phoneNumber[j] + "\",129,\"" + jj + "\"\r\n";
     Serial.println(tmp);  // comando AT a ejecutar (LIBELIUM o SALVADOREÑOS)
@@ -186,3 +190,72 @@ void LoadWhiteList()
   }
 }
 /////////////////////////////////////////////////////////////////////////////////////////////
+int8_t sendATcommand(const char* ATcommand, const char* expected_answer1, unsigned int timeout) {
+
+  uint8_t x = 0,  answer = 0;
+  char response[100];
+  unsigned long previous;
+
+  memset(response, '\0', 100);    // Initialize the string
+
+  delay(100);
+
+  //while ( Serial.available() > 0) Serial.read();   // Clean the input buffer
+
+  //  while(Serial.available()) { //Cleans the input buffer
+  //        Serial.read();
+  //    }
+
+  while (serialSIM800.available()) { //Cleans the input buffer
+    serialSIM800.read();
+  }
+  
+  Serial.println(ATcommand);    // Prints the AT command
+  serialSIM800.write(ATcommand); // Sends the AT command
+  x = 0;
+  previous = millis();
+
+  // this loop waits for the answer
+  do {
+    ////if (Serial.available() != 0) {
+    if (serialSIM800.available() != 0) {
+      ////response[x] = Serial.read();
+      response[x] = serialSIM800.read();
+      x++;
+      // check if the desired answer is in the response of the module
+      if (strstr(response, expected_answer1) != NULL)
+      {
+        answer = 1;
+      }
+    }
+    // Waits for the asnwer with time out
+  }
+  while ((answer == 0) && ((millis() - previous) < timeout));
+
+  return answer;
+}
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+void power_on() {
+
+  uint8_t answer = 0;
+
+  Serial.println("On Power_on...");
+
+  // checks if the module is started
+  answer = sendATcommand("AT\r\n", "OK\r\n", TIMEOUT);
+  if (answer == 0)
+  {
+    // power on pulse
+    digitalWrite(onModulePin, HIGH);
+    delay(3000);
+    digitalWrite(onModulePin, LOW);
+
+    // waits for an answer from the module
+    while (answer == 0) {
+      // Send AT every two seconds and wait for the answer
+      answer = sendATcommand("AT\r\n", "OK\r\n", TIMEOUT);
+      Serial.println("Trying connection with module...");
+    }
+  }
+}
+
