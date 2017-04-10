@@ -13,9 +13,21 @@ SoftwareSerial mySerial(0, 1); // RX, TX
 char startChar = '#'; // or '!', or whatever your start character is
 char endChar = '#';
 boolean storeString = false; //This will be our flag to put the data in our buffer
+
 int const DATABUFFERSIZE = 512;
 char dataBuffer[DATABUFFERSIZE + 1]; //Add 1 for NULL terminator
 
+char* wordlist; // Parse Processor
+
+// Actual and New Contacts
+byte oldNumber = -1;
+byte newNumber = -1;
+
+//DATABUFFERPHONENUMBER = 30 contacts
+char* phoneNumber[31]; //Add 1 for NULL terminator
+
+//Indexes
+byte j = -1;
 
 void setup() {
 
@@ -70,6 +82,7 @@ boolean getSerialString()
         if (mySerial.available()) {
           mySerial.end();
         }
+        parseSerialString();
         return true;
       }
       else
@@ -92,5 +105,31 @@ boolean getSerialString()
   //We've read in all the available Serial data, and don't have a valid string yet, so return false
   return false;
 }
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
+void parseSerialString()
+{
+  Serial.println("On parseSerialString...");
+  wordlist = strtok(dataBuffer, ",");  //Extracts first comma
+  Serial.print("Printing wordlist:");
+  Serial.println(wordlist);
+  oldNumber = atoi(wordlist);         //Converts first number into an integer
+  Serial.print("Printing oldNumber :");
+  Serial.println(oldNumber);
+  wordlist = strtok(NULL, ",");      //Extracts second comma
+  newNumber = atoi(wordlist);       //Converts second number into an integer
+  Serial.print("Printing newNumber :");
+  Serial.println(newNumber);
+  static byte phoneNumberIndex = 0;
+  while ((wordlist = strtok(NULL, ",")) != NULL)
+  {
+    phoneNumber[phoneNumberIndex++] = wordlist;
+    phoneNumber[phoneNumberIndex] = 0; //null terminate the C string
+  }
 
+  j = 0;
+  for ( j = 0; j < newNumber; ++j)
+  {
+    Serial.println(phoneNumber[j]);
+  }
+}
 
