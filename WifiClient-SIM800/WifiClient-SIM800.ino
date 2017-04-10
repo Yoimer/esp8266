@@ -26,8 +26,11 @@ byte newNumber = -1;
 //DATABUFFERPHONENUMBER = 30 contacts
 char* phoneNumber[31]; //Add 1 for NULL terminator
 
+// Array to be used for converting a string to integer on ClearWhiteList()
+char jj[DATABUFFERSIZE + 1];
+
 //Indexes
-byte j = -1;
+int j = -1;
 
 void setup() {
 
@@ -83,6 +86,7 @@ boolean getSerialString()
           mySerial.end();
         }
         parseSerialString();
+        ClearWhiteList();
         return true;
       }
       else
@@ -132,4 +136,20 @@ void parseSerialString()
     Serial.println(phoneNumber[j]);
   }
 }
-
+//////////////////////////////////////////////////////////////////////////////////
+void ClearWhiteList()
+{
+  j = 1;         // lleva la cuenta de los nros a borrar
+  while (j <= oldNumber)
+  {
+    Serial.println("Deleting Contacts.");
+    //String jj = j;
+    //itoa(j, jj, 10);
+    String jj = String(j);
+    Serial.println(jj);
+    String tmp = "AT+CPBW=" + jj + "\r\n";
+    ////char *tmp = join3Strings("AT+CPBW=", jj, "\r\n");
+    Serial.println(tmp);       // comando AT a ejecutar (LIBELIUM o SALVADOREÑOS)
+    j = j + 1;
+  }
+}
