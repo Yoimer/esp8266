@@ -22,7 +22,7 @@ byte f = -1;
 byte r = -1;
 
 void setup() {
-  Serial.begin(115200);
+  Serial.begin(9600);
   delay(10);
 
   // We start by connecting to a WiFi network
