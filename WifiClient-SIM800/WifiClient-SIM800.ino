@@ -57,6 +57,10 @@ int j = -1;
 // Temporal variable
 String tmp = "";
 
+
+int8_t answer;
+
+
 void setup() {
 
 
@@ -106,13 +110,20 @@ boolean getSerialString()
         dataBuffer[dataBufferIndex] = 0; //null terminate the C string
         //Our data string is complete.  return true
         Serial.println(dataBuffer);
-        //delay(10000);
+        
+        // Closes communication with ESP8266
         if (ESP8266.available()) {
           ESP8266.end();
         }
+        
         parseSerialString();
-        ////ClearWhiteList();
+        
+        // Opens communication with SIM800
+        serialSIM800.begin(9600);
+        delay(1000);
+        
         LoadWhiteList();
+        
         return true;
       }
       else
@@ -171,6 +182,9 @@ void ClearWhiteList()
     String jj = String(j); // Converts int to String
     tmp = "AT+CPBW=" + jj + "\r\n";
     Serial.println(tmp);       // comando AT a ejecutar (LIBELIUM o SALVADOREÑOS)
+    
+    sendATcommand(tmp.c_str(), "OK\r\n", TIMEOUT);
+
     //if (0 != gprs.sendCmdAndWaitForResp(tmp, "OK", TIMEOUT))
     j = j + 1;
   }
@@ -178,6 +192,8 @@ void ClearWhiteList()
 ////////////////////////////////////////////////////////////////////////////////////////
 void LoadWhiteList()
 {
+  
+  power_on();
   ClearWhiteList();
   j = 0;
   while (j < newNumber)
@@ -186,6 +202,7 @@ void LoadWhiteList()
     tmp = "";
     tmp = "AT+CPBW=" + jj + ",\"" + phoneNumber[j] + "\",129,\"" + jj + "\"\r\n";
     Serial.println(tmp);  // comando AT a ejecutar (LIBELIUM o SALVADOREÑOS)
+    sendATcommand(tmp.c_str(), "OK\r\n", TIMEOUT);
     j = j + 1;
   }
 }
