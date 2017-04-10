@@ -16,10 +16,17 @@
 
 //Create software serial object to communicate with ESP8266
 SoftwareSerial ESP8266(ESP8266TX, ESP8266RX);
- 
+
 ////SoftwareSerial ESP8266(0, 1); // RX, TX
 
+//SIM800 TX is connected to Arduino D8
+#define SIM800_TX_PIN 8
+ 
+//SIM800 RX is connected to Arduino D7
+#define SIM800_RX_PIN 7
 
+//Create software serial object to communicate with SIM800
+SoftwareSerial serialSIM800(SIM800_TX_PIN, SIM800_RX_PIN);
 
 char startChar = '#'; // or '!', or whatever your start character is
 char endChar = '#';
