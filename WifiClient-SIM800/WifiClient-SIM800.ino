@@ -8,7 +8,18 @@
 */
 #include <SoftwareSerial.h>
 
-SoftwareSerial mySerial(0, 1); // RX, TX
+//ESP8266TX is connected to Arduino RX D0
+#define ESP8266TX 0
+ 
+//ESP8266RX is connected to Arduino TX D1
+#define ESP8266RX 1
+
+//Create software serial object to communicate with ESP8266
+SoftwareSerial ESP8266(ESP8266TX, ESP8266RX);
+ 
+////SoftwareSerial ESP8266(0, 1); // RX, TX
+
+
 
 char startChar = '#'; // or '!', or whatever your start character is
 char endChar = '#';
@@ -46,14 +57,14 @@ void setup() {
   Serial.println("SoftwareSerialParser Started!");
 
   // set the data rate for the SoftwareSerial port
-  mySerial.begin(9600);
+  ESP8266.begin(9600);
   delay(1000);
 
 }
 
 void loop() { // run over and over
 
-  while (mySerial.available()) {
+  while (ESP8266.available()) {
     getSerialString();
   }
 }
@@ -61,9 +72,9 @@ void loop() { // run over and over
 boolean getSerialString()
 {
   static byte dataBufferIndex = 0;
-  while (mySerial.available())
+  while (ESP8266.available())
   {
-    char incomingbyte = mySerial.read();
+    char incomingbyte = ESP8266.read();
     // if(incomingbyte == startChar)
     // {
     //     dataBufferIndex = 0;  //Initialize our dataBufferIndex variable
@@ -85,8 +96,8 @@ boolean getSerialString()
         //Our data string is complete.  return true
         Serial.println(dataBuffer);
         //delay(10000);
-        if (mySerial.available()) {
-          mySerial.end();
+        if (ESP8266.available()) {
+          ESP8266.end();
         }
         parseSerialString();
         ////ClearWhiteList();
@@ -167,3 +178,4 @@ void LoadWhiteList()
     j = j + 1;
   }
 }
+/////////////////////////////////////////////////////////////////////////////////////////////
