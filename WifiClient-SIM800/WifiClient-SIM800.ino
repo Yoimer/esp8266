@@ -1,141 +1,96 @@
-#include <ESP8266WiFi.h>
+/*
+  SoftwareSerialParser
+  (based on SoftwareSerialExample.ino)
 
-//const char* ssid     = "WiwoNET";
-//const char* password = "xxxxxxx";
+  Description: Software to parse serial data from ESP8266 and
+  sent it to SIM800L-EVB
 
-const char* ssid     = "Casa";
-const char* password = "remioy2006202";
+*/
+#include <SoftwareSerial.h>
 
-//const char* host = "https://pure-caverns-1350.herokuapp.com";
-//const char* host = "pure-caverns-1350.herokuapp.com";
-////const char* host="dev.teubi.co"; Salvadorian fellas
-const char* host = "castillolk.com.ve";
+SoftwareSerial mySerial(0, 1); // RX, TX
 
-String line = "";
-String tmp = "";
-String jj = "";
+char startChar = '#'; // or '!', or whatever your start character is
+char endChar = '#';
+boolean storeString = false; //This will be our flag to put the data in our buffer
+int const DATABUFFERSIZE = 512;
+char dataBuffer[DATABUFFERSIZE + 1]; //Add 1 for NULL terminator
 
-byte OldCounter = -1;
-byte NewCounter = -1;
-byte j = -1;
-byte f = -1;
-byte r = -1;
 
 void setup() {
-  Serial.begin(115200);
-  delay(10);
 
-  // We start by connecting to a WiFi network
 
-  Serial.println();
-  Serial.println();
-  Serial.print("Connecting to ");
-  Serial.println(ssid);
-
-  WiFi.begin(ssid, password);
-
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
+  // Open serial communications and wait for port to open:
+  Serial.begin(9600);
+  while (!Serial) {
+    ; // wait for serial port to connect. Needed for native USB port only
   }
+  Serial.println("SoftwareSerialParser Started!");
 
-  Serial.println("");
-  Serial.println("WiFi connected");
-  Serial.println("IP address: ");
-  Serial.println(WiFi.localIP());
-}
-
-void loop() {
-  delay(5000);
-
-
-  Serial.print("connecting to ");
-  Serial.println(host);
-
-  // Use WiFiClient class to create TCP connections
-  WiFiClient client;
-  const int httpPort = 80;
-  if (!client.connect(host, httpPort)) {
-    Serial.println("connection failed");
-    return;
-  }
-
-  // We now create a URI for the request
-  //String url = "/stan";
-  //String url = "/hola.php";  Salvadorian fellas
-  String url = "/WhiteList.txt";
-
-
-  Serial.print("Requesting URL: ");
-  Serial.println(url);
-
-  // This will send the request to the server
-  client.print(String("GET ") + url + " HTTP/1.1\r\n" +
-               "Host: " + host + "\r\n" +
-               "Connection: close\r\n\r\n");
-  delay(90);
-
-  // Read all the lines of the reply from server and print them to Serial
-  Serial.println("Respond:");
-  while (client.available()) {
-    line = client.readStringUntil('\r');
-    Serial.print(line);
-  }
-  LoadWhiteList();
-
-  Serial.println();
-  Serial.println("closing connection");
+  // set the data rate for the SoftwareSerial port
+  mySerial.begin(9600);
+  delay(1000);
 
 }
 
+void loop() { // run over and over
 
-//////////////////////////////////////
-void ClearWhiteList()
+  while (mySerial.available()) {
+    getSerialString();
+  }
+}
+//////////////////////////////////////////////////////////////////////////////
+boolean getSerialString()
 {
-  Serial.println("On ClearWhiteList");
-  String jj = "";
-  j = 1 ;         // lleva la cuenta de los nros a borrar
-  while (j <= OldCounter)
+  static byte dataBufferIndex = 0;
+  while (mySerial.available())
   {
-    jj = j;
-    tmp = "AT+CPBW=" + jj + "\r\n";
-    Serial.println(tmp);       // comando AT a ejecutar ??
-    j = j + 1;
+    char incomingbyte = mySerial.read();
+    // if(incomingbyte == startChar)
+    // {
+    //     dataBufferIndex = 0;  //Initialize our dataBufferIndex variable
+    //     storeString = true;
+    // }
+    if (storeString)
+    {
+      //Let's check our index here, and abort if we're outside our buffer size
+      //We use our define here so our buffer size can be easily modified
+      if (dataBufferIndex == DATABUFFERSIZE)
+      {
+        //Oops, our index is pointing to an array element outside our buffer.
+        dataBufferIndex = 0;
+        break;
+      }
+      if (incomingbyte == endChar)
+      {
+        dataBuffer[dataBufferIndex] = 0; //null terminate the C string
+        //Our data string is complete.  return true
+        Serial.println(dataBuffer);
+        //delay(10000);
+        if (mySerial.available()) {
+          mySerial.end();
+        }
+        return true;
+      }
+      else
+      {
+        dataBuffer[dataBufferIndex++] = incomingbyte;
+        dataBuffer[dataBufferIndex] = 0; //null terminate the C string   //<Hello, 10.5, 21>
+      }
+    }
+    else
+    {
+
+    }
+    if (incomingbyte == startChar)
+    {
+      dataBufferIndex = 0;  //Initialize our dataBufferIndex variable
+      storeString = true;
+    }
   }
+
+  //We've read in all the available Serial data, and don't have a valid string yet, so return false
+  return false;
 }
-/////////////////////////////////////////////////////
-void LoadWhiteList()
-{
-  Serial.println("On LoadWhiteList");
-  jj = "";
-  tmp = line.substring(3, 5); //Gets oldnumber
-  OldCounter = tmp.toInt();
-  Serial.print("OldCounter: ");
-  Serial.println(OldCounter);
-  
-  tmp = line.substring(6, 8);  // Gets new number
-  NewCounter = tmp.toInt();
-  Serial.print("NewCounter: ");
-  Serial.println(NewCounter);
-  
-  ClearWhiteList();
-  
-  f = 9;         // aqui comienzan los nros de telefono
-  j = 1;         // lleva la cuenta de los nros a cargar
-  while (j <= NewCounter)
-  {
-    r  = f + 11;             //  nros son de largo 11 ejm 04265860622
-    ////tmp  = BuildString.substring( f , r );
-    tmp  = line.substring(f, r);
-    jj   = j;
-    tmp  = "AT+CPBW=" + jj + ",\"" + tmp + "\",129,\"" + jj + "\"\r\n";
-    //  if(0 != gprs.sendCmdAndWaitForResp(tmp.c_str(), "OK", TIMEOUT))
-    //    {
-    //    ERROR("ERROR:CMGF");
-    //    return;
-    //   }
-    Serial.println(tmp);       // comando AT a ejecutar
-    f = f + 12;            //  12 para saltar la coma
-    j = j + 1;
-  }
-}
+
+
