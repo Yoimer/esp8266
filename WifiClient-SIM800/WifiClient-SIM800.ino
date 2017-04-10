@@ -32,6 +32,9 @@ char jj[DATABUFFERSIZE + 1];
 //Indexes
 int j = -1;
 
+// Temporal variable
+String tmp = "";
+
 void setup() {
 
 
@@ -86,7 +89,8 @@ boolean getSerialString()
           mySerial.end();
         }
         parseSerialString();
-        ClearWhiteList();
+        ////ClearWhiteList();
+        LoadWhiteList();
         return true;
       }
       else
@@ -142,14 +146,24 @@ void ClearWhiteList()
   j = 1;         // lleva la cuenta de los nros a borrar
   while (j <= oldNumber)
   {
-    Serial.println("Deleting Contacts.");
-    //String jj = j;
-    //itoa(j, jj, 10);
-    String jj = String(j);
-    Serial.println(jj);
-    String tmp = "AT+CPBW=" + jj + "\r\n";
-    ////char *tmp = join3Strings("AT+CPBW=", jj, "\r\n");
+    String jj = String(j); // Converts int to String
+    tmp = "AT+CPBW=" + jj + "\r\n";
     Serial.println(tmp);       // comando AT a ejecutar (LIBELIUM o SALVADOREÑOS)
+    //if (0 != gprs.sendCmdAndWaitForResp(tmp, "OK", TIMEOUT))
+    j = j + 1;
+  }
+}
+////////////////////////////////////////////////////////////////////////////////////////
+void LoadWhiteList()
+{
+  ClearWhiteList();
+  j = 0;
+  while (j < newNumber)
+  { 
+    String jj = String(j+1); // Converts int to String
+    tmp = "";
+    tmp = "AT+CPBW=" + jj + ",\"" + phoneNumber[j] + "\",129,\"" + jj + "\"\r\n";
+    Serial.println(tmp);  // comando AT a ejecutar (LIBELIUM o SALVADOREÑOS)
     j = j + 1;
   }
 }
