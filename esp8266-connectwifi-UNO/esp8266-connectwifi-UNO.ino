@@ -33,12 +33,14 @@ SoftwareSerial mySerial(ESP8266_RX_PIN, ESP8266_TX_PIN);
 ////SoftwareSerial Serial1(6, 7); // RX, TX
 #endif
 
-char ssid[] = "Casa";            // your network SSID (name)
-char pass[] = "remioy2006202";        // your network password
+char *ssid = "Casa";            // your network SSID (name)
+char *pass = "remioy2006202";        // your network password
 int status = WL_IDLE_STATUS;     // the Wifi radio's status
 
 ////char server[] = "arduino.cc";
-char server[] = "castillolk.com.ve";
+char *server = "castillolk.com.ve";
+char *url = "/WhiteList.txt";
+
 
 // Initialize the Ethernet client object
 WiFiEspClient client;
@@ -78,9 +80,17 @@ void setup()
   if (client.connect(server, 80)) {
     Serial.println("Connected to server");
     // Make a HTTP request
-    client.println("GET /WhiteList.txt HTTP/1.1");
-    client.println("Host: castillolk.com.ve");
-    client.println("Connection: close");
+    /*////client.println("GET /WhiteList.txt HTTP/1.1");
+    client.print(String("GET ") + url + " HTTP/1.1\r\n"); // WORKS OK
+    ////client.println("Host: castillolk.com.ve");
+    client.print(String("Host: ") + server + "\r\n");   // WORKS OK
+    ////client.println("Connection: close");
+    client.print(String("Connection: close") + "\r\n"); // WORKS OK*/
+
+    client.print(String("GET ") + url + " HTTP/1.1\r\n" +
+                  "Host: " + server + "\r\n" +
+                  "Connection: close" + "\r\n" + "\r\n");
+
     client.println();
   }
 }
