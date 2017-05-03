@@ -1,9 +1,7 @@
 /*
  WiFiEsp example: WebClient
-
  This sketch connects to google website using an ESP8266 module to
  perform a simple web search.
-
  For more details see: http://yaab-arduino.blogspot.com/p/wifiesp-example-client.html
 */
 
@@ -89,7 +87,7 @@ void setup()
 
     client.print(String("GET ") + url + " HTTP/1.1\r\n" +
                   "Host: " + server + "\r\n" +
-                  "Connection: close" + "\r\n" + "\r\n");
+                  "Connection: close" + "\r\n");
 
     client.println();
   }
