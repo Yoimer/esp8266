@@ -38,12 +38,15 @@ char *ssid = "Casa";            // your network SSID (name)
 char *pass = "remioy2006202";        // your network password
 int status = WL_IDLE_STATUS;     // the Wifi radio's status
 
-////char server[] = "arduino.cc";
-char *server = "estredoyaqueclub.com.ve";
-char *url = "/arduinoenviacorreo.php?telefono=xxx";
-
 unsigned long lastConnectionTime = 0;         // last time you connected to the server, in milliseconds
 const unsigned long postingInterval = 10000L; // delay between updates, in milliseconds
+
+int sensorValue = 0;           //read the input on analog pin 0:
+float voltage = 0;             // convert the analog reading (which goes from 0 - 1023) to a voltage (0 - 5V):
+String voltageAsString = "";  // value read from readLDR()
+
+char *server = "estredoyaqueclub.com.ve";
+char *url = "/arduinoenviacorreo.php?telefono=";
 
 // Initialize the Ethernet client object
 WiFiEspClient client;
@@ -105,9 +108,14 @@ void httpRequest()
   // if there's a successful connection
   if (client.connect(server, 80)) {
     Serial.println("Connecting...");
+
+    // cleans voltageAsString
+    voltageAsString = ""; 
+    // converts float voltage to String
+    voltageAsString = String(readLDR());
     
     // send the HTTP PUT request
-    client.print(String("GET ") + url + " HTTP/1.1\r\n" +
+    client.print(String("GET ") + url + voltageAsString + " HTTP/1.1\r\n" +
                   "Host: " + server + "\r\n" +
                   "Connection: close" + "\r\n");
                   
@@ -141,4 +149,15 @@ void printWifiStatus()
   Serial.print("Signal strength (RSSI):");
   Serial.print(rssi);
   Serial.println(" dBm");
+}
+
+float readLDR()
+{
+  //read the input on analog pin 0:
+  sensorValue = analogRead(A0);
+  //Convert the analog reading (which goes from 0 - 1023) to a voltage (0 - 5V):
+  voltage = sensorValue * (5.0 / 1023.0);
+  // print out the value you read:
+  Serial.println(voltage);
+  return voltage;
 }
