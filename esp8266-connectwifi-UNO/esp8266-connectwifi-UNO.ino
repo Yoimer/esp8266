@@ -39,8 +39,8 @@ char *pass = "remioy2006202";        // your network password
 int status = WL_IDLE_STATUS;     // the Wifi radio's status
 
 ////char server[] = "arduino.cc";
-char *server = "castillolk.com.ve";
-char *url = "/WhiteList.txt";
+char *server = "estredoyaqueclub.com.ve";
+char *url = "/arduinoenviacorreo.php?telefono=xxx";
 
 unsigned long lastConnectionTime = 0;         // last time you connected to the server, in milliseconds
 const unsigned long postingInterval = 10000L; // delay between updates, in milliseconds
