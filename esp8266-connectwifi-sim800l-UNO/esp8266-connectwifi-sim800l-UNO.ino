@@ -48,20 +48,17 @@ SoftwareSerial serialSIM800(SIM800_TX_PIN, SIM800_RX_PIN);
 #endif
 
 int8_t answer;
-
-char *ssid = "Casa";            // your network SSID (name)
-char *pass = "remioy2006202";        // your network password
-int status = WL_IDLE_STATUS;     // the Wifi radio's status
-
-unsigned long lastConnectionTime = 0;         // last time you connected to the server, in milliseconds
-const unsigned long postingInterval = 10000L; // delay between updates, in milliseconds
-
-int sensorValue = 0;           //read the input on analog pin 0:
-float voltage = 0;             // convert the analog reading (which goes from 0 - 1023) to a voltage (0 - 5V):
-String voltageAsString = "";  // value read from readLDR()
-
-char *server = "estredoyaqueclub.com.ve";
-char *url = "/arduinoenviacorreo.php?telefono=";
+char *ssid                              = "Casa";// your network SSID (name)
+char *pass                              = "remioy2006202";// your network password
+int status                              = WL_IDLE_STATUS;// the Wifi radio's status
+unsigned long lastConnectionTime        = 0;// last time you connected to the server, in milliseconds
+const unsigned long postingInterval     = 10000L;// delay between updates, in milliseconds
+int sensorValue                         = 0;//read the input on analog pin 0:
+float voltage                           = 0;// convert the analog reading (which goes from 0 - 1023) to a voltage (0 - 5V):
+String voltageAsString                  = "";// value read from readLDR()
+char *server                            = "estredoyaqueclub.com.ve";
+char *url                               = "/arduinoenviacorreo.php?telefono=";
+String Password                         = ""; // where password will be saved
 
 // Initialize the Ethernet client object
 WiFiEspClient client;
@@ -79,19 +76,21 @@ void setup()
   WiFi.init(&ESP8266);
 
   //check for the presence of the shield
-  if (WiFi.status() == WL_NO_SHIELD) {
-    Serial.println("WiFi shield not present");
-    // don't continue
-    while (true);
-  }
+  if (WiFi.status() == WL_NO_SHIELD) 
+     {
+		Serial.println("WiFi shield not present");
+		// don't continue
+		while (true);
+	 }
 
   // attempt to connect to WiFi network
-  while ( status != WL_CONNECTED) {
-    Serial.print("Attempting to connect to WPA SSID: ");
-    Serial.println(ssid);
-    // Connect to WPA/WPA2 network
-    status = WiFi.begin(ssid, pass);
-  }
+  while ( status != WL_CONNECTED) 
+		{
+			Serial.print("Attempting to connect to WPA SSID: ");
+			Serial.println(ssid);
+			// Connect to WPA/WPA2 network
+			status = WiFi.begin(ssid, pass);
+		}
 
   Serial.println("You're connected to the network");
 
@@ -119,31 +118,33 @@ void httpRequest()
   client.stop();
 
   // if there's a successful connection
-  if (client.connect(server, 80)) {
-    Serial.println("Connecting...");
+  if (client.connect(server, 80)) 
+	 {
+		Serial.println("Connecting...");
 
-    // cleans voltageAsString
-    voltageAsString = "";
-    // converts float voltage to String
-    voltageAsString = String(readLDR());
+		// cleans voltageAsString
+		voltageAsString = "";
+		// converts float voltage to String
+		voltageAsString = String(readLDR());
 
-    // send the HTTP PUT request
-    client.print(String("GET ") + url + voltageAsString + " HTTP/1.1\r\n" +
-                 "Host: " + server + "\r\n" +
-                 "Connection: close" + "\r\n");
+		// send the HTTP PUT request
+		client.print(String("GET ") + url + voltageAsString + " HTTP/1.1\r\n" +
+					 "Host: " + server + "\r\n" +
+					 "Connection: close" + "\r\n");
 
-    //    client.println(F("GET /WhiteList.txt HTTP/1.1"));
-    //    client.println(F("Host: castillolk.com.ve"));
-    //    client.println("Connection: close");
-    client.println();
+		//    client.println(F("GET /WhiteList.txt HTTP/1.1"));
+		//    client.println(F("Host: castillolk.com.ve"));
+		//    client.println("Connection: close");
+		client.println();
 
-    // note the time that the connection was made
-    lastConnectionTime = millis();
-  }
-  else {
-    // if you couldn't make a connection
-    Serial.println("Connection failed");
-  }
+		// note the time that the connection was made
+		lastConnectionTime = millis();
+     }
+	 else 
+	 {
+		// if you couldn't make a connection
+		Serial.println("Connection failed");
+     }
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 void printWifiStatus()
@@ -176,31 +177,34 @@ float readLDR()
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
-void power_on() {
+void power_on() 
+{
 
   uint8_t answer = 0;
 
   Serial.println("On Power_on...");
 
   // checks if the module is started
-  answer = sendATcommand("AT\r\n", "OK\r\n", TIMEOUT);
+  answer = sendATcommand("AT\r\n", "OK\r\n", TIMEOUT, 0);
   if (answer == 0)
-  {
-    // power on pulse
-    digitalWrite(onModulePin, HIGH);
-    delay(3000);
-    digitalWrite(onModulePin, LOW);
+	 {
+		// power on pulse
+		digitalWrite(onModulePin, HIGH);
+		delay(3000);
+		digitalWrite(onModulePin, LOW);
 
     // waits for an answer from the module
-    while (answer == 0) {
-      // Send AT every two seconds and wait for the answer
-      answer = sendATcommand("AT\r\n", "OK\r\n", TIMEOUT);
-      Serial.println("Trying connection with module...");
-    }
-  }
+		while (answer == 0) 
+			  {
+				  // Send AT every two seconds and wait for the answer
+				  answer = sendATcommand("AT\r\n", "OK\r\n", TIMEOUT, 0);
+				  Serial.println("Trying connection with module...");
+			  }
+     }
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////////
-int8_t sendATcommand(const char* ATcommand, const char* expected_answer1, unsigned int timeout) {
+int8_t sendATcommand(const char* ATcommand, const char* expected_answer1,unsigned int timeout, int xpassword) 
+{
 
   uint8_t x = 0,  answer = 0;
   char response[100];
@@ -216,9 +220,10 @@ int8_t sendATcommand(const char* ATcommand, const char* expected_answer1, unsign
   //        Serial.read();
   //    }
 
-  while (serialSIM800.available()) { //Cleans the input buffer
-    serialSIM800.read();
-  }
+  while (serialSIM800.available())
+		{ 	//Cleans the input buffer
+			serialSIM800.read();
+		}
 
   Serial.println(ATcommand);    // Prints the AT command
   serialSIM800.write(ATcommand); // Sends the AT command
@@ -226,20 +231,39 @@ int8_t sendATcommand(const char* ATcommand, const char* expected_answer1, unsign
   previous = millis();
 
   // this loop waits for the answer
-  do {
+  do 
+  {
     ////if (Serial.available() != 0) {
-    if (serialSIM800.available() != 0) {
-      ////response[x] = Serial.read();
-      response[x] = serialSIM800.read();
-      x++;
-      // check if the desired answer is in the response of the module
-      if (strstr(response, expected_answer1) != NULL)
-      {
-        answer = 1;
-      }
-    }
-    // Waits for the asnwer with time out
+    if (serialSIM800.available() != 0)
+	   {
+		  ////response[x] = Serial.read();
+		  response[x] = serialSIM800.read();
+		  x++;
+		  // check if the desired answer is in the response of the module
+		  if (strstr(response, expected_answer1) != NULL)
+			 {
+				answer = 1;
+				String numbFromSim = String(response);
+				numbFromSim = numbFromSim.substring(numbFromSim.indexOf(":"),
+                                            numbFromSim.indexOf(",129,"));
+				numbFromSim = numbFromSim.substring((numbFromSim.indexOf(34) + 1),
+                                            numbFromSim.indexOf(34, numbFromSim.indexOf(34) + 1));
+				if ( xpassword == 1)
+				   {
+						numbFromSim = numbFromSim.substring( 0, 4);
+						Password = numbFromSim ;
+						return 0;
+				   }
+				else
+				   {
+						numbFromSim = numbFromSim.substring( 0, 11 );
+				   }
+             }
+        }
+
   }
+        
+  // Waits for the asnwer with time out
   while ((answer == 0) && ((millis() - previous) < timeout));
 
   return answer;
@@ -249,8 +273,15 @@ void Sim800Module()
 {
   serialSIM800.listen();
   power_on();
+  Serial.println("Connecting to the network...");
+  while ( (sendATcommand("AT+CREG?\r\n", "+CREG: 0,1\r\n", 5000, 0) ||
+           sendATcommand("AT+CREG?\r\n", "+CREG: 0,5\r\n", 5000, 0)) == 0 );
+  sendATcommand("AT+CMGF=1\r\n", "OK\r\n", 5000, 0);
+  sendATcommand("AT+CNMI=1,2,0,0,0\r\n", "OK\r\n", 5000, 0);
+  sendATcommand("AT+CPBR=1,1\r\n", "OK\r\n", 5000, 1);
+  Serial.println("Password:");
+  Serial.println(Password);
   serialSIM800.end();
-
 }
 /////////////////////////////////////////////////////////////////////////////////
 void ESP8266Module()
@@ -269,20 +300,20 @@ void ESP8266Module()
 
   int counter = 0;
   while (counter < 2) 
-  {
-    httpRequest();
+		{
+			httpRequest();
 
-    // if there's incoming data from the net connection send it out the serial port
-    // this is for debugging purposes only
-    while (client.available())
-    {
-      char c = client.read();
-      Serial.write(c);
-    }
+			// if there's incoming data from the net connection send it out the serial port
+			// this is for debugging purposes only
+			while (client.available())
+				  {
+					char c = client.read();
+					Serial.write(c);
+				  }
 
-    counter = counter + 1;
+			counter = counter + 1;
 
-  }
+        }
 
   ESP8266.end();
 }
