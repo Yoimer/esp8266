@@ -40,7 +40,7 @@ SoftwareSerial ESP8266(ESP8266_RX_PIN, ESP8266_TX_PIN);
 //Create software serial object to communicate with SIM800
 SoftwareSerial serialSIM800(SIM800_TX_PIN, SIM800_RX_PIN);
 
-#define TIMEOUT 5000
+#define TIMEOUT 20000
 
 #define onModulePin 13
 
@@ -281,6 +281,7 @@ void Sim800Module()
   sendATcommand("AT+CPBR=1,1\r\n", "OK\r\n", 5000, 1);
   Serial.println("Password:");
   Serial.println(Password);
+  sendSMS("04168262667", "Hello World!");
   serialSIM800.end();
 }
 /////////////////////////////////////////////////////////////////////////////////
@@ -316,4 +317,38 @@ void ESP8266Module()
         }
 
   ESP8266.end();
+}
+///////////////////////////////////////////////////////
+int sendSMS(char *phone_number, char *sms_text)
+{
+  char aux_string[30];
+  uint8_t answer = 0;
+  Serial.print("Setting SMS mode...");
+  sendATcommand("AT+CMGF=1\r\n", "OK\r\n", TIMEOUT, 0);   // sets the SMS mode to text
+  Serial.println("Sending SMS");
+  sprintf(aux_string, "AT+CMGS=\"%s\"\r\n", phone_number);
+  answer = sendATcommand(aux_string, ">", TIMEOUT, 0);   // send the SMS number
+  if (answer == 1)
+     {
+		Serial.println(sms_text);
+		serialSIM800.write(sms_text);
+		delay(1000);
+		serialSIM800.write(0x1A);
+		delay(500);
+		answer = sendATcommand("", "OK\r\n", TIMEOUT, 0);
+     if (answer == 1)
+        {
+			Serial.println("Sent ");
+        }
+     else
+	    {
+			Serial.println("error ");
+        }
+     }
+  else
+     {
+		Serial.println("error ");
+		Serial.println(answer, DEC);
+     }
+  return answer;
 }
