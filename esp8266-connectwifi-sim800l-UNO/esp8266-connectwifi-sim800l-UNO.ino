@@ -47,7 +47,7 @@ SoftwareSerial serialSIM800(SIM800_TX_PIN, SIM800_RX_PIN);
 ////SoftwareSerial Serial1(6, 7); // RX, TX
 #endif
 
-int8_t answer;
+int8_t answer;                          //where sendATcommand response is saved
 char *ssid                              = "Casa";// your network SSID (name)
 char *pass                              = "remioy2006202";// your network password
 int status                              = WL_IDLE_STATUS;// the Wifi radio's status
@@ -56,9 +56,40 @@ const unsigned long postingInterval     = 10000L;// delay between updates, in mi
 int sensorValue                         = 0;//read the input on analog pin 0:
 float voltage                           = 0;// convert the analog reading (which goes from 0 - 1023) to a voltage (0 - 5V):
 String voltageAsString                  = "";// value read from readLDR()
-char *server                            = "estredoyaqueclub.com.ve";
-char *url                               = "/arduinoenviacorreo.php?telefono=";
-String Password                         = ""; // where password will be saved
+char *server                            = "estredoyaqueclub.com.ve";//server to pusblish data
+char *url                               = "/arduinoenviacorreo.php?telefono=";//path in server
+String Password                         = "";// where password will be saved
+String lastLine                         = "";// where last line of SMS or call will be saved
+char currentLine[500]                   = "";//variable to hold last line of serial output from SIM800
+bool nextValidLineIsCall                = false;//boolean to be set to true when a valid call
+String phonenum                         = "";//where incoming number will be saved, might be SMS or call
+String PhoneCalling                     = "";//variable to manipulate call number
+String PhoneCallingIndex                = "";//variable to manipulate call number index
+String DateandHour                      = "";//variable to save date and hour when receiving a SMS
+bool nextLineIsMessage                  = false;//boolean to be set to true when a SMS
+int firstComma                          = -1;//initialize first comma index
+int secondComma                         = -1;//initialize second comma index
+int thirdComma                          = -1;//initialize third comma index
+int forthComma                          = -1;//initialize forth comma index
+int fifthComma                          = -1;//initialize fifth comma index
+int firstQuote                          = -1;//initialize first quote index
+int secondQuote                         = -1;//initialize second comma index
+int firstColon                          = -1;//initialize first colon index
+int secondColon                         = -1;//initialize second colon index
+int thirdColon                          = -1;//initialize third colon index
+int swveces                             =  0;//initialize swveces index
+int len                                 = -1;//initialize len index
+int j                                   = -1;//initialize j index
+int i                                   = -1;//initialize i index
+int f                                   = -1;//initialize f index
+int r                                   =  0;//initialize r index
+bool isIncontact                        = false;//boolean to be set to true when a number is on phonebook
+bool isAuthorized                       = false;//boolean to be set to true when a number is authorized
+int currentLineIndex                    = 0;//initialize index when reading buffer
+int x;
+String OldPhoneCalling                  = "";//where previous phone will be saved
+unsigned long xprevious;//previous measured value
+
 
 // Initialize the Ethernet client object
 WiFiEspClient client;
@@ -274,14 +305,27 @@ void Sim800Module()
   serialSIM800.listen();
   power_on();
   Serial.println("Connecting to the network...");
-  while ( (sendATcommand("AT+CREG?\r\n", "+CREG: 0,1\r\n", 5000, 0) ||
-           sendATcommand("AT+CREG?\r\n", "+CREG: 0,5\r\n", 5000, 0)) == 0 );
-  sendATcommand("AT+CMGF=1\r\n", "OK\r\n", 5000, 0);
-  sendATcommand("AT+CNMI=1,2,0,0,0\r\n", "OK\r\n", 5000, 0);
-  sendATcommand("AT+CPBR=1,1\r\n", "OK\r\n", 5000, 1);
+  while ( (sendATcommand("AT+CREG?\r\n", "+CREG: 0,1\r\n", TIMEOUT, 0) ||
+           sendATcommand("AT+CREG?\r\n", "+CREG: 0,5\r\n", TIMEOUT, 0)) == 0 );
+  sendATcommand("AT+CMGF=1\r\n", "OK\r\n", TIMEOUT, 0);
+  sendATcommand("AT+CNMI=1,2,0,0,0\r\n", "OK\r\n", TIMEOUT, 0);
+  sendATcommand("AT+CPBR=1,1\r\n", "OK\r\n", TIMEOUT, 1);
   Serial.println("Password:");
   Serial.println(Password);
-  sendSMS("04168262667", "Hello World!");
+  sendSMS("04168262667", "System is online");
+  
+  if (serialSIM800.available() > 0)
+     {
+		char lastCharRead = Serial.read();
+		if (lastCharRead == '\r' || lastCharRead == '\n')
+		   {
+				endOfLineReached();
+		   }
+		else
+		   {
+				currentLine[currentLineIndex++] = lastCharRead;
+		   }
+     }
   serialSIM800.end();
 }
 /////////////////////////////////////////////////////////////////////////////////
@@ -351,4 +395,231 @@ int sendSMS(char *phone_number, char *sms_text)
 		Serial.println(answer, DEC);
      }
   return answer;
+}
+///////////////////////////////////////////////////////
+void endOfLineReached()
+{
+	lastLine = String(currentLine);
+
+  //-----------------------Call---------------------------//
+  // If lastLine reads RING, New Call Indication was received.
+  // Hence, the THIRD LINE is the caller information.
+
+  // The whole string will be something like this if caller IS registered on SIM Card:
+  //RING (First Line)
+  //     (Second Line is empty)
+  //+CLIP: "04168262667",129,"",0,"Yoimer",0 (Third Line)
+
+  // The whole string will be something like this if caller is NOT registered on SIM Card
+  //RING (First Line)
+  //     (Second Line is empty)
+  //+CLIP: "04168262667",129,"",0,"",0 (Third Line)
+
+  //----------------------SMS-------------------------------------//
+  //If lastLine reads +CMT, New SMS Message Indications was received.
+  //Hence, next line is the message content.
+
+  if (lastLine.startsWith("RING"))//New incoming call
+     {
+		Serial.println(lastLine);
+		nextValidLineIsCall = true;
+     }
+  else
+     {
+		if ((lastLine.length() > 0) && (nextValidLineIsCall))//Rejects any empty line
+		   {
+				LastLineIsCLIP();
+		   }
+		   else if (lastLine.startsWith("+CMT:"))//New incoming SMS
+		           {
+						Serial.println(lastLine);
+						phonenum = lastLine.substring((lastLine.indexOf(34) + 1),lastLine.indexOf(34, lastLine.indexOf(34) + 1));
+						nextLineIsMessage = true;
+						firstComma        = lastLine.indexOf(',');
+						secondComma       = lastLine.indexOf(',', firstComma  + 1);
+						thirdComma        = lastLine.indexOf(',', secondComma + 1);
+						forthComma        = lastLine.indexOf(',', thirdComma  + 1);
+						fifthComma        = lastLine.indexOf(',', forthComma  + 1);
+						PhoneCalling      = lastLine.substring((firstComma - 12), (firstComma - 1));
+						PhoneCallingIndex = lastLine.substring((firstComma + 2), (secondComma - 1));
+						firstColon        = lastLine.indexOf(':');
+						secondColon       = lastLine.indexOf(':', firstColon + 1);
+						thirdColon        = lastLine.indexOf(':', secondColon + 1);
+						DateandHour       = lastLine.substring((secondComma + 2), (thirdColon));
+						Serial.println(DateandHour);
+						Serial.println(PhoneCalling);        ////////////////////////////////////////////
+						Serial.println(PhoneCallingIndex);
+						j                 = PhoneCallingIndex.toInt();
+						isIncontact       = false;
+						isAuthorized      = false;
+						if (j > 0)
+					       {
+								isIncontact = true;
+								Serial.println("en phonebook"); //////////////////////////////////////////////
+								if (j <= 5 )
+								   {
+										Serial.println("autorizada"); //////////////////////////////////////////////
+										isAuthorized = true;
+								   }
+					       }
+						else
+					       {
+					       }
+		            }
+		else if ((lastLine.length() > 0) && (nextLineIsMessage))
+		        {
+					LastLineIsCMT();
+		        }
+  }
+	CleanCurrentLine();
+}
+/////////////////////////////////////////////////////////////////////
+void CleanCurrentLine()
+{
+  for ( int i = 0; i < sizeof(currentLine);  ++i )
+	  {
+		currentLine[i] = (char)0;
+      }
+  currentLineIndex = 0;
+}
+/////////////////////////////////////////////////////////////////////
+void LastLineIsCMT()
+{
+  Serial.println(lastLine);
+  //clearBuffer();
+  if (isIncontact)
+	 {
+		if (lastLine.indexOf("LED ON") >= 0)
+           {
+				prendeapaga(0);
+           }
+		else if (lastLine.indexOf("LED OFF") >= 0)
+                {
+					prendeapaga(1);
+                }
+        else if (lastLine.indexOf("ADD") >= 0)
+		        {
+					DelAdd(1);
+		        }
+        else if (lastLine.indexOf("DEL") >= 0)
+                {
+					DelAdd(2);
+                }
+	    else if (lastLine.indexOf("GETA0") >= 0)
+			    {
+					//GetValueofAnalog0();
+			    }
+        else
+           {
+					//clearBuffer();
+           }
+	 }
+  CleanCurrentLine();
+  nextLineIsMessage = false;
+
+}
+////////////////////////////////////////////////////////
+void LastLineIsCLIP()
+
+{
+  firstComma         = lastLine.indexOf(',');
+  secondComma        = lastLine.indexOf(',', firstComma + 1);
+  thirdComma         = lastLine.indexOf(',', secondComma + 1);
+  forthComma         = lastLine.indexOf(',', thirdComma + 1);
+  fifthComma         = lastLine.indexOf(',', forthComma + 1);
+  PhoneCalling       = lastLine.substring((firstComma - 12), (firstComma - 1));
+  PhoneCallingIndex  = lastLine.substring((forthComma + 2), (fifthComma - 1));
+  j                  = PhoneCallingIndex.toInt();
+  if (PhoneCalling == OldPhoneCalling)
+     {
+		 swveces = 1;
+		if ((millis() - xprevious ) > 9000)
+		   {
+				swveces   = 0;
+				xprevious = millis();
+		   };
+     }
+  else
+     {
+		xprevious       = millis();
+		OldPhoneCalling = PhoneCalling;
+		swveces         = 0;
+     }  
+  if (j > 0 & swveces == 0)
+     {
+		digitalWrite(LED_BUILTIN, HIGH);
+     }
+  // if ((WiFiMulti.run() == WL_CONNECTED) & swveces == 0)
+  // {
+    // HTTPClient http;
+    // String xp = "http://estredoyaqueclub.com.ve/arduinoenviacorreo.php?telefono=" + PhoneCalling + "-" + PhoneCallingIndex;
+    // http.begin(xp);
+    // int httpCode = http.GET();
+    // if (httpCode > 0)
+    // {
+      // if (httpCode == HTTP_CODE_OK)
+      // {
+        // String BuildStringx = http.getString();
+        // Serial.println("[+++++++++++++++++++");
+        // Serial.println(BuildStringx);
+        // Serial.println("[+++++++++++++++++++");
+      // }
+    // }
+    // else
+    // {
+      // Serial.printf("[HTTP] GET... failed, error: %s\n", http.errorToString(httpCode).c_str());
+    // }
+    // http.end();
+  // }
+  // clearBuffer();
+  nextValidLineIsCall = false;
+}
+///////////////////////////////////////////////////////////////////////////////////
+int  prendeapaga (int siono)
+{
+  Serial.println("KKKKKKKKKKKKKKKKKKKKKKKKKKK");
+  Serial.println(lastLine);
+  firstComma    = lastLine.indexOf(',');
+  secondComma   = lastLine.indexOf(',', firstComma  + 1);
+  String InPassword = lastLine.substring((firstComma + 1), (secondComma));
+  Serial.println(InPassword);
+  //PasswordOk        =  false ;
+  if (InPassword == Password)
+     {
+		//PasswordOk = true ;
+		digitalWrite(LED_BUILTIN, siono);
+     }
+}
+int  DelAdd(int DelOrAdd)
+/////////////////////////////////////////////////////////////////////////////////////////////
+{
+  char aux_string[100];
+  firstComma          = lastLine.indexOf(',');
+  secondComma         = lastLine.indexOf(',', firstComma  + 1);
+  thirdComma          = lastLine.indexOf(',', secondComma + 1);
+  String indexAndName = lastLine.substring((firstComma + 1), (secondComma));
+  String newContact   = lastLine.substring((secondComma + 1), thirdComma);
+  if (!isAuthorized)
+     {
+		Serial.println(j); //////////////////////////////////////////////////////////////
+		Serial.println("Not authorized to Delete/Add"); /////////////////////////////////
+		return 0;
+     }
+  String tmpx;
+  tmpx = "AT+CPBW=" + indexAndName + "\r\n\"";
+  if ( DelOrAdd == 1 )
+     {
+		tmpx = "AT+CPBW=" + indexAndName + ",\"" + newContact + "\"" + ",129," + "\"" + indexAndName + "\"" + "\r\n\"";
+     }
+  tmpx.toCharArray( aux_string, 100 );
+  Serial.println(aux_string);
+  answer = sendATcommand(aux_string, "OK\r\n", 20000, 0);   // send the SMS number
+  if (answer == 1)
+     {
+		Serial.println("Sent ");
+     }
+  else
+     {
+		Serial.println("error ");
+     }
 }
