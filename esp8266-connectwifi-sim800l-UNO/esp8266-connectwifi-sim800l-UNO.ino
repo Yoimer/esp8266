@@ -1,5 +1,4 @@
-/*
-  WiFiEsp example: WebClientRepeating
+/*  WiFiEsp example: WebClientRepeating
 
   This sketch connects to a web server and makes an HTTP request
   using an Arduino ESP8266 module.
@@ -67,14 +66,11 @@ int currentLineIndex                    = 0;
 //line of serial output is the actual SMS message content
 bool nextLineIsMessage                  = false;
 
-// boolean to change when SMS is LED ON or LED OFF
 bool ledStatus;
 
-//flag to finish infinite loop on Sim800Module function
-bool finishLoop                      = false;
+int firstComma                          = -1;
+int secondComma                         = -1;
 
-// string where lastline from buffer is saved
-String lastLine                      = "";
  
 // Initialize the Ethernet client object
 WiFiEspClient client;
@@ -302,29 +298,71 @@ void Sim800Module()
   Serial.println("Password:");
   Serial.println(Password);
   sendSMS("04168262667", "Hello World!");
-  finishLoop  = false;
   while(true)
        {
+			//Write current status to LED pin
+			digitalWrite(onModulePin, ledStatus);
+   
 			if(serialSIM800.available())
 			  {
 					char lastCharRead = serialSIM800.read();
 					delay(1);
 				//Read each character from serial output until \r or \n is reached (which denotes end of line)
-					if(lastCharRead == '\r' || lastCharRead == '\n')
-				      {
-							endOfLineReached();
-							if (finishLoop == true)
-							   {
-									finishLoop  = false;
-									break;
-							   }
-				      }
-				    else
-				       {
-							currentLine[currentLineIndex++] = lastCharRead;
-                       }  
-	          }
-	   }	
+				if(lastCharRead == '\r' || lastCharRead == '\n')
+				  {
+						String lastLine = String(currentLine);
+					    //If last line read +CMT, New SMS Message Indications was received.
+					    //Hence, next line is the message content.
+					    if(lastLine.startsWith("+CMT:"))
+					      {
+							Serial.println(lastLine);
+							nextLineIsMessage = true;
+							//get second comma to know if on whitelist
+							firstComma   = lastLine.indexOf(',');
+							secondComma  = lastLine.indexOf(',', firstComma  + 1);
+					      } 
+					    else if ((lastLine.length() > 0) && (nextLineIsMessage = true)) 
+					            {
+								if(secondComma - firstComma > 3) // on WhiteList
+								  {
+									  if(nextLineIsMessage) 
+					                    {
+											Serial.println(lastLine);
+										    //Read message content and set status according to SMS content
+											if(lastLine.indexOf("LED ON") >= 0)
+						                      {
+												ledStatus = 1;
+												//Write current status to LED pin
+												digitalWrite(onModulePin, ledStatus);
+												CleanCurrentLine();
+												delay(3000);
+												break;
+						                      } 
+											  else if(lastLine.indexOf("LED OFF") >= 0) 
+						                             {
+														ledStatus = 0;
+														//Write current status to LED pin
+														digitalWrite(onModulePin, ledStatus);
+														CleanCurrentLine();
+														delay(3000);
+														break;
+						                             }
+								              nextLineIsMessage = false;
+								       }	
+					             }
+								 else
+								    {
+										Serial.println("Not in phonebook!");
+									}
+					            }
+					CleanCurrentLine();
+				 }
+				 else 
+				    {
+						currentLine[currentLineIndex++] = lastCharRead;
+				    }
+              }
+        }  
   serialSIM800.end();
 }
 /////////////////////////////////////////////////////////////////////////////////
@@ -400,47 +438,8 @@ void CleanCurrentLine()
 {
   //Clear char array for next line of read
   for ( int i = 0; i < sizeof(currentLine);  ++i )
-      {
-		currentLine[i] = (char)0;
-      }
-  currentLineIndex = 0;
-}
-///////////////////////////////////////
-void endOfLineReached()
-{
-	lastLine = "";
-	lastLine = String(currentLine);
-    if (lastLine.startsWith("+CMT:"))
-	   {
-			Serial.println(lastLine);
-			delay(3000);
-			nextLineIsMessage = true;
-	   }
-    else if ((lastLine.length() > 0) && (nextLineIsMessage))
-	        {
-				LastLineIsCMT();
-			}	
-}
-
-void LastLineIsCMT()
-{
-	if (nextLineIsMessage)
-       {
-			Serial.println(lastLine);
-			delay(3000);
-
-			// If SMS contains LED ON or LED OFF or #WhiteList
-			if (lastLine.indexOf("LED ON") >= 0)
-			   {
-					digitalWrite(LED_BUILTIN, HIGH);  // Turns ON LED
-					finishLoop  = true;
-               }
-            else if (lastLine.indexOf("LED OFF") >= 0)
-                    {
-						digitalWrite(LED_BUILTIN, LOW);  // Turns OFF LED
-						finishLoop  = true;
-                    }
-    CleanCurrentLine();
-    nextLineIsMessage = false;
+  {
+    currentLine[i] = (char)0;
   }
+  currentLineIndex = 0;
 }
