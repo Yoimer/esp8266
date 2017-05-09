@@ -62,16 +62,25 @@ String Password                         = ""; // where password will be saved
 char currentLine[200];
 int currentLineIndex                    = 0;
 
-//Boolean to be set to true if message notificaion was found and next
+//boolean to be set to true if message notificaion was found and next
 //line of serial output is the actual SMS message content
 bool nextLineIsMessage                  = false;
 
-bool ledStatus;
+//boolean to be set to true if call notificaion was found and next
+//line of serial output is the actual SMS message content
+bool nextValidLineIsCall                = true;
 
+
+//boolean to be set to false if caller is in phonebook
+bool ledStatus                          = true;
+
+//indexes
 int firstComma                          = -1;
 int secondComma                         = -1;
+int thirdComma                          = -1;
+int forthComma                          = -1; 
+int fifthComma                          = -1;
 
- 
 // Initialize the Ethernet client object
 WiFiEspClient client;
 
@@ -294,13 +303,13 @@ void Sim800Module()
            sendATcommand("AT+CREG?\r\n", "+CREG: 0,5\r\n", 5000, 0)) == 0 );
   sendATcommand("AT+CMGF=1\r\n", "OK\r\n", 5000, 0);
   sendATcommand("AT+CNMI=3,2,0,0,0\r\n", "OK\r\n", 5000, 0);
+  sendATcommand("AT+CLIP=1\r\n", "OK\r\n", 5000, 0);
   sendATcommand("AT+CPBR=1,1\r\n", "OK\r\n", 5000, 1);
   Serial.println("Password:");
   Serial.println(Password);
   sendSMS("04168262667", "Hello World!");
   while(true)
        {
-			//Write current status to LED pin
 			digitalWrite(onModulePin, ledStatus);
    
 			if(serialSIM800.available())
@@ -321,7 +330,7 @@ void Sim800Module()
 							firstComma   = lastLine.indexOf(',');
 							secondComma  = lastLine.indexOf(',', firstComma  + 1);
 					      } 
-					    else if ((lastLine.length() > 0) && (nextLineIsMessage = true)) 
+					    else if ((lastLine.length() > 0) && (nextLineIsMessage)) 
 					            {
 								if(secondComma - firstComma > 3) // on WhiteList
 								  {
@@ -355,6 +364,35 @@ void Sim800Module()
 										Serial.println("Not in phonebook!");
 									}
 					            }
+						if (lastLine.startsWith("RING"))                                   // New incoming call
+                           {
+								Serial.println(lastLine);
+								nextValidLineIsCall = true;
+                           }
+				        else if ((lastLine.length() > 0) && (nextValidLineIsCall))        // Rejects any empty line
+                                {
+									//get fifth comma to know if on whitelist
+									// Parsing lastLine to determine registration on SIM card
+									Serial.println(lastLine);
+									firstComma = lastLine.indexOf(',');
+									secondComma = lastLine.indexOf(',', firstComma + 1);
+									thirdComma = lastLine.indexOf(',', secondComma + 1);
+									forthComma = lastLine.indexOf(',', thirdComma + 1);
+									fifthComma = lastLine.indexOf(',', forthComma + 1);
+									if (fifthComma - forthComma > 3)
+									   {
+											Serial.println("In contact"); //For debugging
+											ledStatus = 0;
+											//Write current status to LED pin
+											digitalWrite(onModulePin, ledStatus);
+											break;
+									   }
+									else
+									   {
+										   Serial.println("Not in contact"); //For debugging
+									   }
+									nextValidLineIsCall = false;
+                                }
 					CleanCurrentLine();
 				 }
 				 else 
@@ -381,7 +419,7 @@ void ESP8266Module()
   }*/
 
   int counter = 0;
-  while (counter < 2) 
+  while (counter < 3) 
 		{
 			httpRequest();
 
