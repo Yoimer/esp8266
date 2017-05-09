@@ -385,13 +385,17 @@ void Sim800Module()
 											ledStatus = 0;
 											//Write current status to LED pin
 											digitalWrite(onModulePin, ledStatus);
+											CleanCurrentLine();
+											nextValidLineIsCall = false;
 											break;
 									   }
 									else
 									   {
 										   Serial.println("Not in contact"); //For debugging
+										   CleanCurrentLine();
+										   nextValidLineIsCall = false;
 									   }
-									nextValidLineIsCall = false;
+									//nextValidLineIsCall = false;
                                 }
 					CleanCurrentLine();
 				 }
@@ -408,7 +412,7 @@ void ESP8266Module()
 {
   ESP8266.listen();
 
-  // Try twice HTTP Request
+  // Try three times HTTP Request
   
   /*The while loop might be also controlled by time, like
   if 10 seconds have passed since your last connection,
