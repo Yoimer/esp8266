@@ -67,6 +67,10 @@ int currentLineIndex = 0;
 //line of serial output is the actual SMS message content
 bool nextLineIsMessage                 = false;
 
+//Boolean to be set to true if call notificaion was found and next
+//line of serial output is the actual call message content
+bool nextValidLineIsCall               = false;
+
 // Integer indexes
 int firstComma                         = -1;
 int secondComma                        = -1;
@@ -314,6 +318,9 @@ void Sim800Module()
                if(lastCharRead == '\r' || lastCharRead == '\n')
 			     {
 					String lastLine = String(currentLine);
+					
+				////////////////////////////////////SMS/////////////////////////////////
+				
                    //If last line read +CMT, New SMS Message Indications was received.
                    //Hence, next line is the message content.
                    if(lastLine.startsWith("+CMT:"))
@@ -359,6 +366,51 @@ void Sim800Module()
 										nextLineIsMessage = false;
 									}
 					   }
+					   
+					   ///////////////////////CALL//////////////////
+					   
+					   else if (lastLine.startsWith("RING"))
+					         {
+								 Serial.println(lastLine);
+                                 nextValidLineIsCall = true;
+							 }
+						else if ((lastLine.length() > 0) && (nextValidLineIsCall))        // Rejects any empty line
+                                {
+									//LastLineIsCLIP();
+									if (nextValidLineIsCall)
+									   {
+											Serial.println(lastLine);
+											// Parsing lastLine to determine registration on SIM card
+											firstComma = lastLine.indexOf(',');
+											Serial.println(firstComma);  //For debugging
+											secondComma = lastLine.indexOf(',', firstComma + 1);
+											Serial.println(secondComma); //For debugging
+											thirdComma = lastLine.indexOf(',', secondComma + 1);
+											Serial.println(thirdComma);  //For debugging
+											forthComma = lastLine.indexOf(',', thirdComma + 1);
+											Serial.println(forthComma); //For debugging
+											fifthComma = lastLine.indexOf(',', forthComma + 1);
+											Serial.println(fifthComma); //For debugging
+											
+											if (fifthComma - forthComma > 3) //On whitelist
+									           {
+											    Serial.println("In contact"); //For debugging
+											    ledStatus = 0;
+											    //Write current status to LED pin
+											   digitalWrite(onModulePin, ledStatus);
+											   CleanCurrentLine();
+											   nextValidLineIsCall = false;
+											   break;
+									           }
+									        else
+									           {
+													Serial.println("Not in contact"); //For debugging
+													CleanCurrentLine();
+													nextValidLineIsCall = false;
+                                               }
+										}	
+
+                                }	 
 		        CleanCurrentLine();
                 }
 				else 
