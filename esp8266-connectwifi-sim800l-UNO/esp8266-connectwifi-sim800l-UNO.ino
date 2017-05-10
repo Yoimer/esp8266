@@ -302,16 +302,6 @@ void Sim800Module()
   serialSIM800.listen();
   power_on();
   initialSettings();
-  
-  /* Serial.println("Connecting to the network...");
-  while ( (sendATcommand("AT+CREG?\r\n", "+CREG: 0,1\r\n", 5000, 0) ||
-           sendATcommand("AT+CREG?\r\n", "+CREG: 0,5\r\n", 5000, 0)) == 0 );
-  sendATcommand("AT+CMGF=1\r\n", "OK\r\n", 5000, 0);
-  sendATcommand("AT+CNMI=3,2,0,0,0\r\n", "OK\r\n", 5000, 0);
-  sendATcommand("AT+CPBR=1,1\r\n", "OK\r\n", 5000, 1);
-  Serial.println("Password:");
-  Serial.println(Password);
-  sendSMS("04168262667", "Hello World!"); */
   while(true)
        {
 			//Write current status to LED pin
@@ -322,47 +312,60 @@ void Sim800Module()
 				char lastCharRead = serialSIM800.read();
                //Read each character from serial output until \r or \n is reached (which denotes end of line)
                if(lastCharRead == '\r' || lastCharRead == '\n')
-			   {
+			     {
 					String lastLine = String(currentLine);
                    //If last line read +CMT, New SMS Message Indications was received.
                    //Hence, next line is the message content.
-               if(lastLine.startsWith("+CMT:"))
-			     {
-					Serial.println(lastLine);
-					nextLineIsMessage = true;
-                 } 
-		       else if (lastLine.length() > 0 && nextLineIsMessage) 
-			           {
-						if(nextLineIsMessage) 
-						  {
-							Serial.println(lastLine);
-                           //Read message content and set status according to SMS content
-                           if(lastLine.indexOf("LED ON") >= 0)
-						     {
-								ledStatus = 1;
-								digitalWrite(onModulePin, ledStatus);
-								CleanCurrentLine();
-								nextLineIsMessage = false;
-								break;
-                             }
-							 else if(lastLine.indexOf("LED OFF") >= 0)
-                     				{
-										ledStatus = 0;
-										digitalWrite(onModulePin, ledStatus);
-										CleanCurrentLine();
-								        nextLineIsMessage = false;
-										break;
-                                    }
-                             nextLineIsMessage = false;
-                          }
-                       }
+                   if(lastLine.startsWith("+CMT:"))
+			         {
+						Serial.println(lastLine);
+						nextLineIsMessage = true;
+						//get second comma to know if on whitelist
+						firstComma   = lastLine.indexOf(',');
+						secondComma  = lastLine.indexOf(',', firstComma + 1);
+                     } 
+				   else if (lastLine.length() > 0 && nextLineIsMessage) 
+			              {
+							   if(secondComma - firstComma > 3) //On whitelist
+								 {
+									 if(nextLineIsMessage) 
+									   {
+											Serial.println(lastLine);
+											Serial.println("In phonebook");
+											//Read message content and set status according to SMS content
+											if(lastLine.indexOf("LED ON") >= 0)
+											  {
+												ledStatus = 1;
+												digitalWrite(onModulePin, ledStatus);
+												CleanCurrentLine();
+												nextLineIsMessage = false;
+												break;
+											  }
+											else if(lastLine.indexOf("LED OFF") >= 0)
+												   {
+														ledStatus = 0;
+														digitalWrite(onModulePin, ledStatus);
+														CleanCurrentLine();
+														nextLineIsMessage = false;
+														break;
+												   }
+											nextLineIsMessage = false;
+									   }
+								 }
+								 else
+									{
+										Serial.println(lastLine);
+										Serial.println("Not in phonebook");
+										nextLineIsMessage = false;
+									}
+					   }
 		        CleanCurrentLine();
                 }
 				else 
 				   {
 						currentLine[currentLineIndex++] = lastCharRead;
                    }
-              }
+             }
 	   }
   serialSIM800.end();
 }
