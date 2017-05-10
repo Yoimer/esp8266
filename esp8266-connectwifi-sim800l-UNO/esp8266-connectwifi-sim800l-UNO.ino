@@ -65,10 +65,25 @@ int currentLineIndex = 0;
 
 //Boolean to be set to true if message notificaion was found and next
 //line of serial output is the actual SMS message content
-bool nextLineIsMessage = false;
+bool nextLineIsMessage                 = false;
 
-bool ledStatus;
- 
+// Integer indexes
+int firstComma                         = -1;
+int secondComma                        = -1;
+int thirdComma                         = -1;
+int forthComma                         = -1;
+int fifthComma                         = -1;
+
+bool ledStatus                         = true;
+
+//last line from SMS or a call
+String lastLine                        = "";
+
+
+
+
+
+
 // Initialize the Ethernet client object
 WiFiEspClient client;
 
@@ -301,74 +316,54 @@ void Sim800Module()
        {
 			//Write current status to LED pin
 			digitalWrite(onModulePin, ledStatus);
-   
-			if(serialSIM800.available())
-			  {
-					char lastCharRead = serialSIM800.read();
-					delay(1);
-				//Read each character from serial output until \r or \n is reached (which denotes end of line)
-				if(lastCharRead == '\r' || lastCharRead == '\n')
-				  {
-						String lastLine = String(currentLine);
-					 
-					//If last line read +CMT, New SMS Message Indications was received.
-					//Hence, next line is the message content.
-					if(lastLine.startsWith("+CMT:"))
-					  {
-						  Serial.println(lastLine);
-						  nextLineIsMessage = true;
-					  } 
-					else if (lastLine.length() > 0 && (nextLineIsMessage))
-					        {
-								if(nextLineIsMessage) 
-					              {
-										Serial.println(lastLine);
-										//Read message content and set status according to SMS content
-						         if(lastLine.indexOf("LED ON") >= 0)
-						           {
-										ledStatus = 1;
-										//Write current status to LED pin
-			                            digitalWrite(onModulePin, ledStatus);
-										CleanCurrentLine();
-										delay(3000);
-										break;
-						           } 
-						         else if(lastLine.indexOf("LED OFF") >= 0) 
-						                {
-											ledStatus = 0;
-											//Write current status to LED pin
-			                                digitalWrite(onModulePin, ledStatus);
-											CleanCurrentLine();
-											delay(3000);
-											break;
-						                }
-								 nextLineIsMessage = false;
-					             }
-					        }
-					/* //Clear char array for next line of read
-					for( int i = 0; i < sizeof(currentLine);  ++i ) 
-					   {
-							currentLine[i] = (char)0;
-					   }
-					currentLineIndex = 0; */
-					CleanCurrentLine();
-				}else 
-				    {
-						currentLine[currentLineIndex++] = lastCharRead;
-				    }
-              }
-			/* if (serialSIM800.read() == '+') 
+			//If there is serial output from SIM800
+           if(serialSIM800.available())
+		     {
+				char lastCharRead = serialSIM800.read();
+               //Read each character from serial output until \r or \n is reached (which denotes end of line)
+               if(lastCharRead == '\r' || lastCharRead == '\n')
 			   {
-
-				for (byte i = 0; i < 200; i++) 
-				    {
-						delay(1);
-						received[i] = serialSIM800.read();
-						Serial.print(received[i]);
-                    }
-				break;	
-                } */
-        }  
+					String lastLine = String(currentLine);
+                   //If last line read +CMT, New SMS Message Indications was received.
+                   //Hence, next line is the message content.
+               if(lastLine.startsWith("+CMT:"))
+			     {
+					Serial.println(lastLine);
+					nextLineIsMessage = true;
+                 } 
+		       else if (lastLine.length() > 0 && nextLineIsMessage) 
+			           {
+						if(nextLineIsMessage) 
+						  {
+							Serial.println(lastLine);
+                           //Read message content and set status according to SMS content
+                           if(lastLine.indexOf("LED ON") >= 0)
+						     {
+								ledStatus = 1;
+								digitalWrite(onModulePin, ledStatus);
+								CleanCurrentLine();
+								nextLineIsMessage = false;
+								break;
+                             }
+							 else if(lastLine.indexOf("LED OFF") >= 0)
+                     				{
+										ledStatus = 0;
+										digitalWrite(onModulePin, ledStatus);
+										CleanCurrentLine();
+								        nextLineIsMessage = false;
+										break;
+                                    }
+                             nextLineIsMessage = false;
+                          }
+                       }
+		        CleanCurrentLine();
+                }
+				else 
+				   {
+						currentLine[currentLineIndex++] = lastCharRead;
+                   }
+              }
+	   }
   serialSIM800.end();
 }
 /////////////////////////////////////////////////////////////////////////////////
@@ -462,3 +457,4 @@ void initialSettings()
   Serial.println(Password);
   sendSMS("04168262667", "Hello World!");
 }
+////////////////////////////////////////
