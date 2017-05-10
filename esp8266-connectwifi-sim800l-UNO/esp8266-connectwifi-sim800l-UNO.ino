@@ -1,4 +1,5 @@
-/*  WiFiEsp example: WebClientRepeating
+/*
+  WiFiEsp example: WebClientRepeating
 
   This sketch connects to a web server and makes an HTTP request
   using an Arduino ESP8266 module.
@@ -60,27 +61,14 @@ char *url                               = "/arduinoenviacorreo.php?telefono=";
 String Password                         = ""; // where password will be saved
 
 char currentLine[200];
-int currentLineIndex                    = 0;
+int currentLineIndex = 0;
 
-//boolean to be set to true if message notificaion was found and next
+//Boolean to be set to true if message notificaion was found and next
 //line of serial output is the actual SMS message content
-bool nextLineIsMessage                  = false;
+bool nextLineIsMessage = false;
 
-//boolean to be set to true if call notificaion was found and next
-//line of serial output is the actual SMS message content
-bool nextValidLineIsCall                = true;
-
-
-//boolean to be set to false if caller is in phonebook
-bool ledStatus                          = true;
-
-//indexes
-int firstComma                          = -1;
-int secondComma                         = -1;
-int thirdComma                          = -1;
-int forthComma                          = -1; 
-int fifthComma                          = -1;
-
+bool ledStatus;
+ 
 // Initialize the Ethernet client object
 WiFiEspClient client;
 
@@ -298,18 +286,20 @@ void Sim800Module()
 {
   serialSIM800.listen();
   power_on();
-  Serial.println("Connecting to the network...");
+  initialSettings();
+  
+  /* Serial.println("Connecting to the network...");
   while ( (sendATcommand("AT+CREG?\r\n", "+CREG: 0,1\r\n", 5000, 0) ||
            sendATcommand("AT+CREG?\r\n", "+CREG: 0,5\r\n", 5000, 0)) == 0 );
   sendATcommand("AT+CMGF=1\r\n", "OK\r\n", 5000, 0);
   sendATcommand("AT+CNMI=3,2,0,0,0\r\n", "OK\r\n", 5000, 0);
-  sendATcommand("AT+CLIP=1\r\n", "OK\r\n", 5000, 0);
   sendATcommand("AT+CPBR=1,1\r\n", "OK\r\n", 5000, 1);
   Serial.println("Password:");
   Serial.println(Password);
-  sendSMS("04168262667", "Hello World!");
+  sendSMS("04168262667", "Hello World!"); */
   while(true)
        {
+			//Write current status to LED pin
 			digitalWrite(onModulePin, ledStatus);
    
 			if(serialSIM800.available())
@@ -320,90 +310,64 @@ void Sim800Module()
 				if(lastCharRead == '\r' || lastCharRead == '\n')
 				  {
 						String lastLine = String(currentLine);
-					    //If last line read +CMT, New SMS Message Indications was received.
-					    //Hence, next line is the message content.
-					    if(lastLine.startsWith("+CMT:"))
-					      {
-							Serial.println(lastLine);
-							nextLineIsMessage = true;
-							//get second comma to know if on whitelist
-							firstComma   = lastLine.indexOf(',');
-							secondComma  = lastLine.indexOf(',', firstComma  + 1);
-					      } 
-					    else if ((lastLine.length() > 0) && (nextLineIsMessage)) 
-					            {
-								if(secondComma - firstComma > 3) // on WhiteList
-								  {
-									  if(nextLineIsMessage) 
-					                    {
-											Serial.println(lastLine);
-										    //Read message content and set status according to SMS content
-											if(lastLine.indexOf("LED ON") >= 0)
-						                      {
-												ledStatus = 1;
-												//Write current status to LED pin
-												digitalWrite(onModulePin, ledStatus);
-												CleanCurrentLine();
-												delay(3000);
-												break;
-						                      } 
-											  else if(lastLine.indexOf("LED OFF") >= 0) 
-						                             {
-														ledStatus = 0;
-														//Write current status to LED pin
-														digitalWrite(onModulePin, ledStatus);
-														CleanCurrentLine();
-														delay(3000);
-														break;
-						                             }
-								              nextLineIsMessage = false;
-								       }	
-					             }
-								 else
-								    {
-										Serial.println("Not in phonebook!");
-									}
-					            }
-						if (lastLine.startsWith("RING"))                                   // New incoming call
-                           {
-								Serial.println(lastLine);
-								nextValidLineIsCall = true;
-                           }
-				        else if ((lastLine.length() > 0) && (nextValidLineIsCall))        // Rejects any empty line
-                                {
-									//get fifth comma to know if on whitelist
-									// Parsing lastLine to determine registration on SIM card
-									Serial.println(lastLine);
-									firstComma = lastLine.indexOf(',');
-									secondComma = lastLine.indexOf(',', firstComma + 1);
-									thirdComma = lastLine.indexOf(',', secondComma + 1);
-									forthComma = lastLine.indexOf(',', thirdComma + 1);
-									fifthComma = lastLine.indexOf(',', forthComma + 1);
-									if (fifthComma - forthComma > 3)
-									   {
-											Serial.println("In contact"); //For debugging
+					 
+					//If last line read +CMT, New SMS Message Indications was received.
+					//Hence, next line is the message content.
+					if(lastLine.startsWith("+CMT:"))
+					  {
+						  Serial.println(lastLine);
+						  nextLineIsMessage = true;
+					  } 
+					else if (lastLine.length() > 0 && (nextLineIsMessage))
+					        {
+								if(nextLineIsMessage) 
+					              {
+										Serial.println(lastLine);
+										//Read message content and set status according to SMS content
+						         if(lastLine.indexOf("LED ON") >= 0)
+						           {
+										ledStatus = 1;
+										//Write current status to LED pin
+			                            digitalWrite(onModulePin, ledStatus);
+										CleanCurrentLine();
+										delay(3000);
+										break;
+						           } 
+						         else if(lastLine.indexOf("LED OFF") >= 0) 
+						                {
 											ledStatus = 0;
 											//Write current status to LED pin
-											digitalWrite(onModulePin, ledStatus);
+			                                digitalWrite(onModulePin, ledStatus);
 											CleanCurrentLine();
-											nextValidLineIsCall = false;
+											delay(3000);
 											break;
-									   }
-									else
-									   {
-										   Serial.println("Not in contact"); //For debugging
-										   CleanCurrentLine();
-										   nextValidLineIsCall = false;
-									   }
-									//nextValidLineIsCall = false;
-                                }
+						                }
+								 nextLineIsMessage = false;
+					             }
+					        }
+					/* //Clear char array for next line of read
+					for( int i = 0; i < sizeof(currentLine);  ++i ) 
+					   {
+							currentLine[i] = (char)0;
+					   }
+					currentLineIndex = 0; */
 					CleanCurrentLine();
-				 }
-				 else 
+				}else 
 				    {
 						currentLine[currentLineIndex++] = lastCharRead;
 				    }
               }
+			/* if (serialSIM800.read() == '+') 
+			   {
+
+				for (byte i = 0; i < 200; i++) 
+				    {
+						delay(1);
+						received[i] = serialSIM800.read();
+						Serial.print(received[i]);
+                    }
+				break;	
+                } */
         }  
   serialSIM800.end();
 }
@@ -484,4 +448,17 @@ void CleanCurrentLine()
     currentLine[i] = (char)0;
   }
   currentLineIndex = 0;
+}
+//////////////////////////////////////////
+void initialSettings()
+{
+  Serial.println("Connecting to the network...");
+  while ( (sendATcommand("AT+CREG?\r\n", "+CREG: 0,1\r\n", 5000, 0) ||
+           sendATcommand("AT+CREG?\r\n", "+CREG: 0,5\r\n", 5000, 0)) == 0 );
+  sendATcommand("AT+CMGF=1\r\n", "OK\r\n", 5000, 0);
+  sendATcommand("AT+CNMI=1,2,0,0,0\r\n", "OK\r\n", 5000, 0);
+  sendATcommand("AT+CPBR=1,1\r\n", "OK\r\n", 5000, 1);
+  Serial.println("Password:");
+  Serial.println(Password);
+  sendSMS("04168262667", "Hello World!");
 }
