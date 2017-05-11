@@ -339,6 +339,9 @@ void Sim800Module()
 									   {
 											Serial.println(lastLine);
 											Serial.println("In phonebook");
+											
+											///////////////////CHANGE STATES ON LED/////////////
+											
 											//Read message content and set status according to SMS content
 											if((lastLine.indexOf("LED ON") >= 0) && (lastLine.indexOf(',' + Password + ',') >= 0))
 											  {
@@ -348,7 +351,7 @@ void Sim800Module()
 												nextLineIsMessage = false;
 												break;
 											  }
-											else if((lastLine.indexOf("LED OFF") >= 0) && (lastLine.indexOf(',' + Password + ',') >=0))
+											else if((lastLine.indexOf("LED OFF") >= 0) && (lastLine.indexOf(',' + Password + ',') >= 0))
 												   {
 														ledStatus = 0;
 														digitalWrite(onModulePin, ledStatus);
@@ -356,6 +359,21 @@ void Sim800Module()
 														nextLineIsMessage = false;
 														break;
 												   }
+				                            ///////////////////ADDING USERS/////////////
+											else if ((lastLine.indexOf("ADD") >= 0))
+											        {
+														firstComma              = lastLine.indexOf(',');
+														secondComma             = lastLine.indexOf(',', firstComma + 1);
+														thirdComma              = lastLine.indexOf(',', secondComma + 1);
+														String indexAndName     = lastLine.substring((firstComma + 1), (secondComma)); //Position and name to be saved on SIM
+														String newContact       = lastLine.substring((secondComma + 1), thirdComma);  // Number to be saved on SIM
+														String tmp              = "AT+CPBW=" + indexAndName + ",\"" + newContact + "\"" + ",129," + "\"" + indexAndName + "\"" + "\r\n\"";
+														sendATcommand(tmp.c_str(),"OK\r\n",5000,0);
+														CleanCurrentLine();
+														nextLineIsMessage = false;
+														break;
+														//Serial.println(tmp);
+													}
 											nextLineIsMessage = false;
 									   }
 								 }
@@ -510,6 +528,18 @@ void initialSettings()
   sendATcommand("AT+CPBR=1,1\r\n", "OK\r\n", 5000, 1);
   Serial.println("Password:");
   Serial.println(Password);
-  sendSMS("04168262667", "Hello World!");
+  ////sendSMS("04168262667", "Hello World!");
 }
 ////////////////////////////////////////
+
+
+/*firstComma = lastLine.indexOf(',');
+secondComma = lastLine.indexOf(',', firstComma + 1);
+thirdComma = lastLine.indexOf(',', secondComma + 1);
+String indexAndName = lastLine.substring((firstComma + 1), (secondComma)); //Position and name to be saved on SIM
+//Serial.println(indexAndName);
+String newContact = lastLine.substring((secondComma + 1), thirdComma);  // Number to be saved on SIM
+//Serial.println(newContact);
+tmp = ""; // Cleans tmp
+tmp = "AT+CPBW=" + indexAndName + ",\"" + newContact + "\"" + ",129," + "\"" + indexAndName + "\"" + "\r\n\"";
+Serial.println(tmp);*/
