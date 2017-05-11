@@ -340,7 +340,7 @@ void Sim800Module()
 											Serial.println(lastLine);
 											Serial.println("In phonebook");
 											//Read message content and set status according to SMS content
-											if(lastLine.indexOf("LED ON") >= 0)
+											if((lastLine.indexOf("LED ON") >= 0) && (lastLine.indexOf(',' + Password + ',') >= 0))
 											  {
 												ledStatus = 1;
 												digitalWrite(onModulePin, ledStatus);
@@ -348,7 +348,7 @@ void Sim800Module()
 												nextLineIsMessage = false;
 												break;
 											  }
-											else if(lastLine.indexOf("LED OFF") >= 0)
+											else if((lastLine.indexOf("LED OFF") >= 0) && (lastLine.indexOf(',' + Password + ',') >=0))
 												   {
 														ledStatus = 0;
 														digitalWrite(onModulePin, ledStatus);
