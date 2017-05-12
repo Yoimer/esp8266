@@ -393,24 +393,32 @@ void Sim800Module()
 													///////////////////Deleting USERS/////////////
 											else if ((lastLine.indexOf("DEL") >= 0))
 											        {
-														firstComma = lastLine.indexOf(',');
-														secondComma = lastLine.indexOf(',', firstComma + 1);
-														thirdComma = lastLine.indexOf(',', secondComma + 1);
-														String indexAndName = lastLine.substring((firstComma + 1), (secondComma)); //Position and name to be saved on SIM
-														String newContact = lastLine.substring((secondComma + 1), thirdComma);  // Number to be saved on SIM
-														String tmp = "AT+CPBW=" + indexAndName + "\r\n\"";
-														answer = sendATcommand(tmp.c_str(),"OK\r\n",5000,0);
-														if (answer == 1)
-														   {
-															   ///Serial.println("Contact deleted from SIM card");
-															   CleanCurrentLine();
-														       nextLineIsMessage = false;
-														       break;
-														   }
-														   else
-														      {
-																  Serial.println("Contact no deleted");
-															  }
+														if ((admin >= 1) && (admin <= 5))
+														    {
+																firstComma = lastLine.indexOf(',');
+																secondComma = lastLine.indexOf(',', firstComma + 1);
+																thirdComma = lastLine.indexOf(',', secondComma + 1);
+																String indexAndName = lastLine.substring((firstComma + 1), (secondComma)); //Position and name to be saved on SIM
+																String newContact = lastLine.substring((secondComma + 1), thirdComma);  // Number to be saved on SIM
+																String tmp = "AT+CPBW=" + indexAndName + "\r\n\"";
+																answer = sendATcommand(tmp.c_str(),"OK\r\n",5000,0);
+																if (answer == 1)
+																   {
+																	   ///Serial.println("Contact deleted from SIM card");
+																	   CleanCurrentLine();
+																	   nextLineIsMessage = false;
+																	   break;
+																   }
+																   else
+																	  {
+																		  Serial.println("Contact no deleted");
+																	  }
+															}
+															else
+															   {
+																   Serial.println(F("Not allowed to delete contacts"));
+																   //Serial.println("Not allowed to delete contacts");
+															   }
 													} 
 											nextLineIsMessage = false;
 									   }
