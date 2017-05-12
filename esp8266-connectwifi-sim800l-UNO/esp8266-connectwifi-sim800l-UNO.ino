@@ -83,8 +83,8 @@ bool ledStatus                         = true;
 //last line from SMS or a call
 String lastLine                        = "";
 
-
-
+// name of contact registered
+byte admin                             = -1;
 
 
 
@@ -330,6 +330,9 @@ void Sim800Module()
 						//get second comma to know if on whitelist
 						firstComma   = lastLine.indexOf(',');
 						secondComma  = lastLine.indexOf(',', firstComma + 1);
+						String indexChecker = lastLine.substring((firstComma + 2), (secondComma - 1));
+						Serial.println(indexChecker);
+						admin = indexChecker.toInt();
                      } 
 				   else if (lastLine.length() > 0 && nextLineIsMessage) 
 			              {
@@ -362,23 +365,30 @@ void Sim800Module()
 				                            ///////////////////ADDING USERS/////////////
 											else if ((lastLine.indexOf("ADD") >= 0))
 											        {
-														firstComma              = lastLine.indexOf(',');
-														secondComma             = lastLine.indexOf(',', firstComma + 1);
-														thirdComma              = lastLine.indexOf(',', secondComma + 1);
-														String indexAndName     = lastLine.substring((firstComma + 1), (secondComma)); //Position and name to be saved on SIM
-														String newContact       = lastLine.substring((secondComma + 1), thirdComma);  // Number to be saved on SIM
-														String tmp              = "AT+CPBW=" + indexAndName + ",\"" + newContact + "\"" + ",129," + "\"" + indexAndName + "\"" + "\r\n\"";
-														answer = sendATcommand(tmp.c_str(),"OK\r\n",5000,0);
-														if (answer == 1)
+														if ((admin >= 1) && (admin <= 5))
+														    {
+																firstComma              = lastLine.indexOf(',');
+																secondComma             = lastLine.indexOf(',', firstComma + 1);
+																thirdComma              = lastLine.indexOf(',', secondComma + 1);
+																String indexAndName     = lastLine.substring((firstComma + 1), (secondComma)); //Position and name to be saved on SIM
+																String newContact       = lastLine.substring((secondComma + 1), thirdComma);  // Number to be saved on SIM
+																String tmp              = "AT+CPBW=" + indexAndName + ",\"" + newContact + "\"" + ",129," + "\"" + indexAndName + "\"" + "\r\n\"";
+																answer = sendATcommand(tmp.c_str(),"OK\r\n",5000,0);
+																if (answer == 1)
+																   {
+																	   CleanCurrentLine();
+																	   nextLineIsMessage = false;
+																	   break;
+																   }
+																   else
+																	  {
+																		  Serial.println("Contact no added");
+																	  }
+														    }
+														else
 														   {
-															   CleanCurrentLine();
-														       nextLineIsMessage = false;
-														       break;
-														   }
-														   else
-														      {
-																  Serial.println("Contact no added");
-															  }
+															   Serial.println("Not allowed to add contacts");
+														   }	
 													}
 													///////////////////Deleting USERS/////////////
 											else if ((lastLine.indexOf("DEL") >= 0))
@@ -428,15 +438,15 @@ void Sim800Module()
 											Serial.println(lastLine);
 											// Parsing lastLine to determine registration on SIM card
 											firstComma = lastLine.indexOf(',');
-											Serial.println(firstComma);  //For debugging
+											//Serial.println(firstComma);  //For debugging
 											secondComma = lastLine.indexOf(',', firstComma + 1);
-											Serial.println(secondComma); //For debugging
+											//Serial.println(secondComma); //For debugging
 											thirdComma = lastLine.indexOf(',', secondComma + 1);
-											Serial.println(thirdComma);  //For debugging
+											//Serial.println(thirdComma);  //For debugging
 											forthComma = lastLine.indexOf(',', thirdComma + 1);
-											Serial.println(forthComma); //For debugging
+											//Serial.println(forthComma); //For debugging
 											fifthComma = lastLine.indexOf(',', forthComma + 1);
-											Serial.println(fifthComma); //For debugging
+											//Serial.println(fifthComma); //For debugging
 											
 											if (fifthComma - forthComma > 3) //On whitelist
 									           {
@@ -558,16 +568,3 @@ void initialSettings()
   Serial.println(Password);
   ////sendSMS("04168262667", "Hello World!");
 }
-////////////////////////////////////////
-
-
-/*firstComma = lastLine.indexOf(',');
-secondComma = lastLine.indexOf(',', firstComma + 1);
-thirdComma = lastLine.indexOf(',', secondComma + 1);
-String indexAndName = lastLine.substring((firstComma + 1), (secondComma)); //Position and name to be saved on SIM
-//Serial.println(indexAndName);
-String newContact = lastLine.substring((secondComma + 1), thirdComma);  // Number to be saved on SIM
-//Serial.println(newContact);
-tmp = ""; // Cleans tmp
-tmp = "AT+CPBW=" + indexAndName + ",\"" + newContact + "\"" + ",129," + "\"" + indexAndName + "\"" + "\r\n\"";
-Serial.println(tmp);*/
