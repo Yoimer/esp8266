@@ -12,10 +12,43 @@
 SoftwareSerial ESP8266(ESP8266_RX_PIN, ESP8266_TX_PIN);
 
 
+/*
+
+PINOUT Connection:
+
+///////////////////////////////////////////////////////////////////////////////
+
+External 12VDC/2A Power Supply                                    MP1584 (Turn knot until a volmeter shows 3.3VDC for ESP8266)
+
+Positive--------------------------------------------------------->Positive
+
+Negative--------------------------------------------------------->Negative
+
+///////////////////////////////////////////////////////////////////////////////
+
+MP1584                                                            ESP8266
+
+Positive--------------------------------------------------------->VCC
+
+Positive--------------------------------------------------------->CH_PD
+
+Negative--------------------------------------------------------->GND
+
+///////////////////////////////////////////////////////////////////////////////
+
+Arduino UNO                                                        ESP8266
+
+Digital 2                                                          ESP8266_RX->TX
+
+Digital 3                                                          ESP8266_TX->RX
+
+GND                                                                GND
+
+*/
 
 
- 
-void setup() {
+void setup()
+ {
   //Begin serial comunication with Arduino and Arduino IDE (Serial Monitor)
   Serial.begin(9600);
   while(!Serial);
@@ -27,14 +60,17 @@ void setup() {
   Serial.println("Setup Complete!");
 }
  
-void loop() {
+void loop()
+ {
   //Read ESP8266 output (if available) and print it in Arduino IDE Serial Monitor
-  if(ESP8266.available()){
-    Serial.write(ESP8266.read());
-  }
+  if(ESP8266.available())
+    {
+      Serial.write(ESP8266.read());
+    }
   //Read Arduino IDE Serial Monitor inputs (if available) and send them to ESP8266
-  if(Serial.available()){
-    ESP8266.write(Serial.read());
-  }
+  if(Serial.available())
+    {
+      ESP8266.write(Serial.read());
+    }
 }
 
