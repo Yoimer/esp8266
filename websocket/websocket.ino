@@ -5,7 +5,7 @@
 // DEFAULT variables *********************************************************
 const char* ssid="Casa";             // yourSSID
 const char* password="remioy2006202";     // yourPASSWORD
-int LED=16;                              // PINnumber where your LED is
+int LED=2;                              // PINnumber where your LED is
 int websockMillis=50;                    // SocketVariables are sent to client every 50 milliseconds
 int sliderVal=60;                        // Default value of the slider
 // END ***********************************************************************
